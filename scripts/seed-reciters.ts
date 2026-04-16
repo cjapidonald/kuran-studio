@@ -81,10 +81,26 @@ async function resolveReciterIds(): Promise<Map<string, number>> {
   return resolved;
 }
 
+async function seedReciters(ids: Map<string, number>) {
+  const rows = RECITERS.map((r) => ({
+    slug: r.slug,
+    display_name: r.display_name,
+    style: r.style,
+    quran_com_id: ids.get(r.slug)!,
+    sort_order: r.sort_order,
+    is_default: r.is_default,
+  }));
+  const { error } = await supabase.from("reciters").upsert(rows, { onConflict: "slug" });
+  if (error) throw error;
+  console.log(`  upserted ${rows.length} reciters`);
+}
+
 async function main() {
   console.log("seed-reciters: resolving Quran.com IDs");
   const ids = await resolveReciterIds();
-  console.log("seed-reciters: resolved", ids);
+  console.log("seed-reciters: seeding reciters table");
+  await seedReciters(ids);
+  console.log("seed-reciters: done (reciters only — recitations in next task)");
 }
 
 main().catch((err) => {
