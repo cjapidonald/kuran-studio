@@ -45,7 +45,11 @@ export function ReciterPlayer() {
               className="w-7 h-7 rounded-full flex items-center justify-center
                          text-emerald-400 hover:bg-emerald-500/10 transition-colors"
             >
-              {isPlaying ? (
+              {state.status === "error" ? (
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor" className="text-red-400">
+                  <path d="M12 2L2 22h20L12 2zm0 6v6m0 3v.5" />
+                </svg>
+              ) : isPlaying ? (
                 <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor">
                   <rect x="6" y="5" width="4" height="14" rx="1" />
                   <rect x="14" y="5" width="4" height="14" rx="1" />
@@ -135,6 +139,18 @@ function ExpandedPanel({
           </svg>
         </button>
       </div>
+
+      {state.status === "error" && (
+        <div className="mt-2 text-[11px] text-red-400 flex items-center justify-between">
+          <span>⚠ Couldn&apos;t load audio</span>
+          <button
+            onClick={() => actions.play()}
+            className="text-emerald-400 hover:text-emerald-300 underline underline-offset-2"
+          >
+            Retry
+          </button>
+        </div>
+      )}
 
       <div className="mt-3">
         <input
