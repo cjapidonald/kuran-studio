@@ -2,7 +2,7 @@ import { notFound } from "next/navigation";
 import Link from "next/link";
 import { fetchSurah } from "@/lib/quran/api";
 import { SURAHS } from "@/lib/quran/surahs";
-import { getSurahDescription } from "@/lib/quran/descriptions";
+import { getSurahDescription, getRelatedSurahs } from "@/lib/quran/descriptions";
 import { LANGUAGES, SUPPORTED_LOCALES } from "@/lib/i18n/languages";
 import { getDictionary } from "@/lib/i18n/get-dictionary";
 import { AyahDisplay } from "@/components/reader/ayah-display";
@@ -91,6 +91,11 @@ export default async function SurahPage({ params }: PageProps) {
   const prev = surahNum > 1 ? SURAHS[surahNum - 2] : null;
   const next = surahNum < 114 ? SURAHS[surahNum] : null;
 
+  const relatedSurahNumbers = await getRelatedSurahs(surahNum, 4);
+  const related = relatedSurahNumbers
+    .map((n) => SURAHS.find((s) => s.number === n))
+    .filter((s): s is (typeof SURAHS)[number] => Boolean(s));
+
   const surahName = dict[`surah.${meta.number}`] || meta.transliteration;
   const revelationLabel = meta.revelationType === "meccan" ? dict["reader.meccan"] : dict["reader.medinan"];
 
@@ -178,6 +183,52 @@ export default async function SurahPage({ params }: PageProps) {
               {next.transliteration} &rarr;
             </Link>
           ) : <div />}
+        </div>
+
+        {/* Related Surahs */}
+        {related.length > 0 && (
+          <section className="mt-14 pt-8 border-t border-gray-800/30">
+            <h2 className="text-xs font-mono text-emerald-500 tracking-widest mb-4">RELATED SURAHS</h2>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+              {related.map((r) => {
+                const name = dict[`surah.${r.number}`] || r.transliteration;
+                return (
+                  <Link
+                    key={r.number}
+                    href={`/${lang}/${r.number}`}
+                    className="group bg-gray-900/50 border border-gray-800/50 hover:border-emerald-500/40 rounded-xl p-4 transition-all"
+                  >
+                    <div className="flex items-center gap-3">
+                      <span className="shrink-0 w-9 h-9 rounded-lg bg-emerald-500/10 text-emerald-400 text-xs font-mono font-bold flex items-center justify-center">
+                        {r.number}
+                      </span>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-semibold text-white group-hover:text-emerald-400 transition-colors truncate">
+                          {r.transliteration}
+                        </p>
+                        <p className="text-[10px] text-gray-500 truncate">{name}</p>
+                      </div>
+                    </div>
+                  </Link>
+                );
+              })}
+            </div>
+          </section>
+        )}
+
+        {/* Browse all surahs link */}
+        <div className="mt-10 pt-6 border-t border-gray-800/30 text-center">
+          <Link
+            href={`/${lang}`}
+            className="inline-flex items-center gap-2 text-xs text-gray-500 hover:text-emerald-400 transition-colors"
+          >
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <line x1="3" y1="6" x2="21" y2="6" />
+              <line x1="3" y1="12" x2="21" y2="12" />
+              <line x1="3" y1="18" x2="21" y2="18" />
+            </svg>
+            Browse all 114 surahs
+          </Link>
         </div>
       </div>
     </div>

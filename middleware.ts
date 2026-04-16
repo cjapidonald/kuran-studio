@@ -31,11 +31,16 @@ export async function middleware(request: NextRequest) {
   // Refresh session
   await supabase.auth.getSession();
 
-  // Skip locale logic for auth, sitemap, robots
+  // Skip locale logic for auth, sitemap, robots, icons
   if (
     pathname.startsWith("/auth") ||
     pathname === "/sitemap.xml" ||
-    pathname === "/robots.txt"
+    pathname === "/robots.txt" ||
+    pathname === "/icon" ||
+    pathname === "/apple-icon" ||
+    pathname === "/favicon.ico" ||
+    pathname.startsWith("/icon/") ||
+    pathname.startsWith("/apple-icon/")
   ) {
     return supabaseResponse;
   }
