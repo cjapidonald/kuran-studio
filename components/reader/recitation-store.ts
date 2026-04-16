@@ -2,6 +2,7 @@ import type { RecitationAyah, Reciter } from "@/lib/quran/recitations";
 
 export interface PlayerState {
   reciter: Reciter;
+  surah: number;              // 1-based surah number
   ayahIndex: number;          // 0-based index into the recitation array (NOT ayah number)
   activeWord: number | null;  // word index in current ayah, null if idle
   status: "idle" | "loading" | "playing" | "paused" | "error";
@@ -9,6 +10,8 @@ export interface PlayerState {
   durationMs: number;         // duration of current ayah
   rate: number;               // 0.75 | 1.0 | 1.25 | 1.5
   volume: number;             // 0.0 – 1.0
+  repeat: boolean;            // on end of surah, restart from ayah 0
+  shuffle: boolean;           // on end of surah, jump to a random other surah
   autoScroll: boolean;
 }
 
@@ -16,22 +19,27 @@ export interface RecitationStore {
   getState: () => PlayerState;
   subscribe: (fn: () => void) => () => void;
   setReciter: (reciter: Reciter, recitation: RecitationAyah[]) => void;
+  setSurah: (surah: number, recitation: RecitationAyah[]) => void;
   setAyahIndex: (idx: number) => void;
   setActiveWord: (word: number | null) => void;
   setStatus: (s: PlayerState["status"]) => void;
   setTime: (currentMs: number, durationMs: number) => void;
   setRate: (rate: number) => void;
   setVolume: (v: number) => void;
+  setRepeat: (on: boolean) => void;
+  setShuffle: (on: boolean) => void;
   setAutoScroll: (on: boolean) => void;
   getRecitation: () => RecitationAyah[];
 }
 
 export function createRecitationStore(
   initialReciter: Reciter,
+  initialSurah: number,
   initialRecitation: RecitationAyah[],
 ): RecitationStore {
   let state: PlayerState = {
     reciter: initialReciter,
+    surah: initialSurah,
     ayahIndex: 0,
     activeWord: null,
     status: "idle",
@@ -39,6 +47,8 @@ export function createRecitationStore(
     durationMs: initialRecitation[0]?.duration_ms ?? 0,
     rate: 1.0,
     volume: 1.0,
+    repeat: false,
+    shuffle: false,
     autoScroll: true,
   };
   let recitation: RecitationAyah[] = initialRecitation;
@@ -52,6 +62,18 @@ export function createRecitationStore(
     setReciter: (reciter, newRecitation) => {
       recitation = newRecitation;
       state = { ...state, reciter };
+      notify();
+    },
+    setSurah: (surah, newRecitation) => {
+      recitation = newRecitation;
+      state = {
+        ...state,
+        surah,
+        ayahIndex: 0,
+        activeWord: null,
+        currentMs: 0,
+        durationMs: newRecitation[0]?.duration_ms ?? 0,
+      };
       notify();
     },
     setAyahIndex: (idx) => {
@@ -82,6 +104,16 @@ export function createRecitationStore(
       const clamped = Math.max(0, Math.min(1, v));
       if (clamped === state.volume) return;
       state = { ...state, volume: clamped };
+      notify();
+    },
+    setRepeat: (on) => {
+      if (on === state.repeat) return;
+      state = { ...state, repeat: on };
+      notify();
+    },
+    setShuffle: (on) => {
+      if (on === state.shuffle) return;
+      state = { ...state, shuffle: on };
       notify();
     },
     setAutoScroll: (on) => {

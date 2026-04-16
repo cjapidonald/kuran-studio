@@ -169,12 +169,12 @@ export default async function LandingPage({ params }: PageProps) {
                 initialRecitation={initialRecitation}
                 disableGlobalShortcuts
               >
-                <div className="w-full max-w-sm">
+                <div className="w-full max-w-md">
                   <p className="text-[10px] text-emerald-500 font-mono tracking-widest mb-3 text-center md:text-right">
-                    AL-FATIHA &middot; {defaultReciter.display_name.split(" ").slice(-2).join(" ")}
+                    LISTEN &middot; {defaultReciter.display_name.split(" ").slice(-2).join(" ")}
                   </p>
                   <div className="flex md:justify-end justify-center">
-                    <ReciterPlayer defaultExpanded />
+                    <ReciterPlayer defaultExpanded showSurahControls />
                   </div>
                 </div>
               </RecitationProvider>

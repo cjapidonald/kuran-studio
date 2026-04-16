@@ -23,10 +23,11 @@ import {
 
 const LS_KEY = "kurani-reciter";
 const LS_VOLUME = "kurani-volume";
+const LS_REPEAT = "kurani-repeat";
+const LS_SHUFFLE = "kurani-shuffle";
 
 interface ContextValue {
   store: RecitationStore;
-  surah: number;
   reciters: Reciter[];
   audioRef: React.MutableRefObject<HTMLAudioElement | null>;
 }
@@ -54,7 +55,7 @@ export function RecitationProvider({
 }: RecitationProviderProps) {
   const storeRef = useRef<RecitationStore | null>(null);
   if (!storeRef.current) {
-    storeRef.current = createRecitationStore(initialReciter, initialRecitation);
+    storeRef.current = createRecitationStore(initialReciter, surah, initialRecitation);
   }
   const store = storeRef.current;
 
@@ -70,6 +71,8 @@ export function RecitationProvider({
         store.setVolume(v);
       }
     }
+    if (localStorage.getItem(LS_REPEAT) === "1") store.setRepeat(true);
+    if (localStorage.getItem(LS_SHUFFLE) === "1") store.setShuffle(true);
   }
 
   // Honor localStorage preference on mount (if different from server default).
@@ -132,6 +135,30 @@ export function RecitationProvider({
       const rec = store.getRecitation();
       const next = s.ayahIndex + 1;
       if (next >= rec.length) {
+        // End of surah — honor repeat / shuffle before going idle.
+        if (s.repeat) {
+          store.setAyahIndex(0);
+          audio.src = rec[0].audio_url;
+          audio.currentTime = 0;
+          audio.play().catch(() => store.setStatus("error"));
+          return;
+        }
+        if (s.shuffle) {
+          let pick = s.surah;
+          while (pick === s.surah) pick = Math.floor(Math.random() * 114) + 1;
+          store.setStatus("loading");
+          fetchRecitation(s.reciter.slug, pick).then((newRec) => {
+            if (newRec.length === 0) {
+              store.setStatus("idle");
+              return;
+            }
+            store.setSurah(pick, newRec);
+            audio.src = newRec[0].audio_url;
+            audio.currentTime = 0;
+            audio.play().catch(() => store.setStatus("error"));
+          });
+          return;
+        }
         store.setStatus("idle");
         store.setActiveWord(null);
         return;
@@ -261,8 +288,8 @@ export function RecitationProvider({
   }, [store, disableGlobalShortcuts]);
 
   const value = useMemo<ContextValue>(
-    () => ({ store, surah, reciters, audioRef }),
-    [store, surah, reciters],
+    () => ({ store, reciters, audioRef }),
+    [store, reciters],
   );
 
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;
@@ -328,12 +355,15 @@ export function usePlayerState() {
   return useStoreSelector(
     (s) => ({
       reciter: s.reciter,
+      surah: s.surah,
       status: s.status,
       currentMs: s.currentMs,
       durationMs: s.durationMs,
       ayahIndex: s.ayahIndex,
       rate: s.rate,
       volume: s.volume,
+      repeat: s.repeat,
+      shuffle: s.shuffle,
       autoScroll: s.autoScroll,
     }),
     shallowEq,
@@ -350,7 +380,7 @@ export function useTotalAyahs(): number {
 }
 
 export function usePlayerActions() {
-  const { store, surah, audioRef } = useCtx();
+  const { store, audioRef } = useCtx();
 
   const play = useCallback(() => {
     const audio = audioRef.current;
@@ -406,7 +436,8 @@ export function usePlayerActions() {
 
   const setReciter = useCallback(
     async (reciter: Reciter) => {
-      const rec = await fetchRecitation(reciter.slug, surah);
+      const currentSurah = store.getState().surah;
+      const rec = await fetchRecitation(reciter.slug, currentSurah);
       if (rec.length === 0) return;
       const s = store.getState();
       const targetAyah = Math.min(s.ayahIndex, rec.length - 1);
@@ -420,7 +451,43 @@ export function usePlayerActions() {
         if (s.status === "playing") audio.play().catch(() => store.setStatus("error"));
       }
     },
-    [store, surah, audioRef],
+    [store, audioRef],
+  );
+
+  const setSurah = useCallback(
+    async (n: number) => {
+      const s = store.getState();
+      const rec = await fetchRecitation(s.reciter.slug, n);
+      if (rec.length === 0) return;
+      store.setSurah(n, rec);
+      const audio = audioRef.current;
+      if (audio) {
+        audio.src = rec[0].audio_url;
+        audio.currentTime = 0;
+        if (s.status === "playing") audio.play().catch(() => store.setStatus("error"));
+      }
+    },
+    [store, audioRef],
+  );
+
+  const setRepeat = useCallback(
+    (on: boolean) => {
+      store.setRepeat(on);
+      if (typeof window !== "undefined") {
+        localStorage.setItem(LS_REPEAT, on ? "1" : "0");
+      }
+    },
+    [store],
+  );
+
+  const setShuffle = useCallback(
+    (on: boolean) => {
+      store.setShuffle(on);
+      if (typeof window !== "undefined") {
+        localStorage.setItem(LS_SHUFFLE, on ? "1" : "0");
+      }
+    },
+    [store],
   );
 
   const setRate = useCallback(
@@ -447,5 +514,18 @@ export function usePlayerActions() {
     store.setAutoScroll(true);
   }, [store]);
 
-  return { play, pause, seek, nextAyah, prevAyah, setReciter, setRate, setVolume, recenter };
+  return {
+    play,
+    pause,
+    seek,
+    nextAyah,
+    prevAyah,
+    setReciter,
+    setSurah,
+    setRate,
+    setVolume,
+    setRepeat,
+    setShuffle,
+    recenter,
+  };
 }

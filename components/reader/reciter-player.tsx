@@ -8,6 +8,7 @@ import {
   useReciterList,
   useTotalAyahs,
 } from "./recitation-provider";
+import { SURAHS } from "@/lib/quran/surahs";
 
 function formatMs(ms: number) {
   const total = Math.max(0, Math.floor(ms / 1000));
@@ -16,7 +17,13 @@ function formatMs(ms: number) {
   return `${m}:${s.toString().padStart(2, "0")}`;
 }
 
-export function ReciterPlayer({ defaultExpanded = false }: { defaultExpanded?: boolean } = {}) {
+export function ReciterPlayer({
+  defaultExpanded = false,
+  showSurahControls = false,
+}: {
+  defaultExpanded?: boolean;
+  showSurahControls?: boolean;
+} = {}) {
   const [expanded, setExpanded] = useState(defaultExpanded);
   const state = usePlayerState();
   const actions = usePlayerActions();
@@ -76,7 +83,12 @@ export function ReciterPlayer({ defaultExpanded = false }: { defaultExpanded?: b
             </button>
           </motion.div>
         ) : (
-          <ExpandedPanel state={state} actions={actions} onClose={() => setExpanded(false)} />
+          <ExpandedPanel
+            state={state}
+            actions={actions}
+            onClose={() => setExpanded(false)}
+            showSurahControls={showSurahControls}
+          />
         )}
       </AnimatePresence>
     </div>
@@ -87,15 +99,22 @@ function ExpandedPanel({
   state,
   actions,
   onClose,
+  showSurahControls,
 }: {
   state: ReturnType<typeof usePlayerState>;
   actions: ReturnType<typeof usePlayerActions>;
   onClose: () => void;
+  showSurahControls: boolean;
 }) {
   const reciters = useReciterList();
   const totalAyahs = useTotalAyahs();
   const isPlaying = state.status === "playing";
   const progress = state.durationMs > 0 ? state.currentMs / state.durationMs : 0;
+
+  const onPickSurah = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const n = Number(e.target.value);
+    if (!Number.isNaN(n) && n >= 1 && n <= 114) actions.setSurah(n);
+  };
 
   const onScrub = (e: React.ChangeEvent<HTMLInputElement>) => {
     const pct = Number(e.target.value) / 1000;
@@ -121,11 +140,11 @@ function ExpandedPanel({
       animate={{ opacity: 1, scale: 1 }}
       exit={{ opacity: 0, scale: 0.96 }}
       transition={{ type: "spring", stiffness: 240, damping: 28 }}
-      className="w-[300px] p-3 rounded-2xl
+      className={`${showSurahControls ? "w-[400px]" : "w-[300px]"} p-3 rounded-2xl
                  bg-white/5 backdrop-blur-xl backdrop-saturate-150
                  border border-white/10 text-white/90
                  bg-[radial-gradient(circle_at_30%_0%,rgba(16,185,129,0.2),transparent_60%)]
-                 shadow-[inset_0_1px_0_rgba(255,255,255,0.08),0_10px_30px_-10px_rgba(0,0,0,0.5)]"
+                 shadow-[inset_0_1px_0_rgba(255,255,255,0.08),0_10px_30px_-10px_rgba(0,0,0,0.5)]`}
     >
       <div className="flex items-center justify-between">
         <span className="text-sm font-semibold truncate">{state.reciter.display_name}</span>
@@ -170,6 +189,22 @@ function ExpandedPanel({
 
       <div className="mt-3 flex items-center justify-between">
         <div className="flex items-center gap-1">
+          {showSurahControls && (
+            <button
+              aria-label="Shuffle surahs"
+              aria-pressed={state.shuffle}
+              onClick={() => actions.setShuffle(!state.shuffle)}
+              className={`w-8 h-8 rounded-full transition-colors flex items-center justify-center ${
+                state.shuffle
+                  ? "text-emerald-400 bg-emerald-500/15"
+                  : "text-white/60 hover:text-white hover:bg-white/10"
+              }`}
+            >
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M10.59 9.17L5.41 4 4 5.41l5.17 5.17 1.42-1.41zM14.5 4l2.04 2.04L4 18.59 5.41 20 17.96 7.46 20 9.5V4h-5.5zm.33 9.41l-1.41 1.41 3.13 3.13L14.5 20H20v-5.5l-2.04 2.04-3.13-3.13z" />
+              </svg>
+            </button>
+          )}
           <button
             aria-label="Previous ayah"
             onClick={actions.prevAyah}
@@ -204,6 +239,22 @@ function ExpandedPanel({
               <path d="M16 6h2v12h-2zM15 12L4 19V5z" />
             </svg>
           </button>
+          {showSurahControls && (
+            <button
+              aria-label="Repeat surah"
+              aria-pressed={state.repeat}
+              onClick={() => actions.setRepeat(!state.repeat)}
+              className={`w-8 h-8 rounded-full transition-colors flex items-center justify-center ${
+                state.repeat
+                  ? "text-emerald-400 bg-emerald-500/15"
+                  : "text-white/60 hover:text-white hover:bg-white/10"
+              }`}
+            >
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M7 7h10v3l4-4-4-4v3H5v6h2V7zm10 10H7v-3l-4 4 4 4v-3h12v-6h-2v4z" />
+              </svg>
+            </button>
+          )}
         </div>
 
         <button
@@ -249,12 +300,12 @@ function ExpandedPanel({
         </span>
       </div>
 
-      <div className="mt-3 flex items-center justify-between text-xs">
+      <div className="mt-3 flex items-center gap-2 text-xs">
         <select
           value={state.reciter.slug}
           onChange={onPickReciter}
           aria-label="Reciter"
-          className="bg-white/5 border border-white/10 rounded-md px-2 py-1 text-white/80 focus:outline-none focus:border-emerald-400"
+          className="flex-1 min-w-0 bg-white/5 border border-white/10 rounded-md px-2 py-1 text-white/80 focus:outline-none focus:border-emerald-400"
         >
           {reciters.map((r) => (
             <option key={r.slug} value={r.slug} className="bg-gray-900">
@@ -262,10 +313,30 @@ function ExpandedPanel({
             </option>
           ))}
         </select>
-        <span className="text-white/60 font-mono">
-          Ayah {state.ayahIndex + 1}/{totalAyahs}
-        </span>
+        {showSurahControls ? (
+          <select
+            value={state.surah}
+            onChange={onPickSurah}
+            aria-label="Surah"
+            className="flex-1 min-w-0 bg-white/5 border border-white/10 rounded-md px-2 py-1 text-white/80 focus:outline-none focus:border-emerald-400"
+          >
+            {SURAHS.map((s) => (
+              <option key={s.number} value={s.number} className="bg-gray-900">
+                {s.number}. {s.transliteration}
+              </option>
+            ))}
+          </select>
+        ) : (
+          <span className="text-white/60 font-mono shrink-0">
+            Ayah {state.ayahIndex + 1}/{totalAyahs}
+          </span>
+        )}
       </div>
+      {showSurahControls && (
+        <div className="mt-2 text-right text-[10px] text-white/50 font-mono">
+          Ayah {state.ayahIndex + 1}/{totalAyahs}
+        </div>
+      )}
 
       {!state.autoScroll && (
         <div className="mt-2 text-right">
