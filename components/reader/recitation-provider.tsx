@@ -81,6 +81,8 @@ export function RecitationProvider({
   }, [store]);
 
   // rAF tick while playing — drives activeWord + currentMs updates.
+  // Degrades to ayah-level highlight (word=null) when the DOM word count doesn't
+  // match the segment data — protects against Arabic-text tokenization drift.
   useEffect(() => {
     let raf = 0;
     const tick = () => {
@@ -91,7 +93,13 @@ export function RecitationProvider({
         const ayah = rec[s.ayahIndex];
         if (ayah) {
           const ms = Math.floor(audio.currentTime * 1000);
-          const word = findActiveWord(ayah.segments, ms);
+          const domEl = document.querySelector<HTMLElement>(`[data-ayah="${s.ayahIndex}"]`);
+          const wordCount = domEl ? domEl.querySelectorAll("[data-word]").length : 0;
+          const maxWi = ayah.segments.reduce((m, seg) => Math.max(m, seg[0]), -1);
+          const word =
+            wordCount > 0 && maxWi < wordCount
+              ? findActiveWord(ayah.segments, ms)
+              : null;
           store.setActiveWord(word);
           store.setTime(ms, ayah.duration_ms);
         }
@@ -162,6 +170,79 @@ export function RecitationProvider({
       audio?.pause();
     };
   }, []);
+
+  // Track programmatic scrolls so user scrolls can disable auto-scroll.
+  const programmaticScrollUntilRef = useRef(0);
+
+  // Auto-scroll active ayah into view on ayahIndex change.
+  useEffect(() => {
+    return store.subscribe(() => {
+      const s = store.getState();
+      if (!s.autoScroll) return;
+      if (s.status !== "playing") return;
+      const el = document.querySelector<HTMLElement>(`[data-ayah="${s.ayahIndex}"]`);
+      if (!el) return;
+      programmaticScrollUntilRef.current = Date.now() + 600;
+      const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+      el.scrollIntoView({ behavior: reduce ? "auto" : "smooth", block: "center" });
+    });
+  }, [store]);
+
+  // If user scrolls during playback (outside a programmatic scroll window), pause auto-scroll.
+  useEffect(() => {
+    const onScroll = () => {
+      if (Date.now() < programmaticScrollUntilRef.current) return;
+      const s = store.getState();
+      if (s.status === "playing" && s.autoScroll) {
+        store.setAutoScroll(false);
+      }
+    };
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => window.removeEventListener("scroll", onScroll);
+  }, [store]);
+
+  // Re-arm auto-scroll when user explicitly presses play after a pause.
+  useEffect(() => {
+    return store.subscribe(() => {
+      const s = store.getState();
+      if (s.status === "playing" && !s.autoScroll && s.currentMs === 0) {
+        store.setAutoScroll(true);
+      }
+    });
+  }, [store]);
+
+  // Spacebar toggles play/pause; ←/→ step ayahs. Ignored when focus is inside form controls.
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      const target = e.target as HTMLElement | null;
+      if (target && /^(INPUT|TEXTAREA|SELECT|BUTTON)$/.test(target.tagName)) return;
+      if (target?.isContentEditable) return;
+      const s = store.getState();
+      const audio = audioRef.current;
+      if (!audio) return;
+      if (e.code === "Space") {
+        e.preventDefault();
+        if (s.status === "playing") audio.pause();
+        else audio.play().catch(() => store.setStatus("error"));
+      } else if (e.code === "ArrowRight") {
+        const rec = store.getRecitation();
+        const next = Math.min(rec.length - 1, s.ayahIndex + 1);
+        store.setAyahIndex(next);
+        audio.src = rec[next].audio_url;
+        audio.currentTime = 0;
+        if (s.status === "playing") audio.play().catch(() => store.setStatus("error"));
+      } else if (e.code === "ArrowLeft") {
+        const rec = store.getRecitation();
+        const prev = Math.max(0, s.ayahIndex - 1);
+        store.setAyahIndex(prev);
+        audio.src = rec[prev].audio_url;
+        audio.currentTime = 0;
+        if (s.status === "playing") audio.play().catch(() => store.setStatus("error"));
+      }
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [store]);
 
   const value = useMemo<ContextValue>(
     () => ({ store, surah, reciters, audioRef }),
