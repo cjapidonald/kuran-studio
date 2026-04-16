@@ -91,6 +91,7 @@ const TRANSLATIONS: TranslationConfig[] = [
   { key: "hindi_omari", languageCode: "hi", languageName: "हिन्दी", translator: "Azizul Haq Al-Omari", isPrimary: true },
   { key: "tamil_omar", languageCode: "ta", languageName: "தமிழ்", translator: "Omar Sharif", isPrimary: true },
   { key: "tamil_baqavi", languageCode: "ta", languageName: "தமிழ்", translator: "Abdulhamid Baqawi", isPrimary: false },
+  { key: "tamil_omar_brief", languageCode: "ta", languageName: "தமிழ்", translator: "Omar Sharif (Abridged)", isPrimary: false },
   { key: "telugu_muhammad", languageCode: "te", languageName: "తెలుగు", translator: "Abdur-Rahim ibn Muhammad", isPrimary: true },
   { key: "gujarati_omari", languageCode: "gu", languageName: "ગુજરાતી", translator: "Rabella Al-Omari", isPrimary: true },
   { key: "malayalam_kunhi", languageCode: "ml", languageName: "മലയാളം", translator: "Abdul Hamid & Kunhi Mohammed", isPrimary: true },
@@ -118,6 +119,7 @@ const TRANSLATIONS: TranslationConfig[] = [
   { key: "vietnamese_rwwad", languageCode: "vi", languageName: "Tiếng Việt", translator: "Rowwad Translation Center", isPrimary: true },
   { key: "vietnamese_hassan", languageCode: "vi", languageName: "Tiếng Việt", translator: "Hassan Abdul Karim", isPrimary: false },
   { key: "khmer_rwwad", languageCode: "km", languageName: "ខ្មែរ", translator: "Rowwad Translation Center", isPrimary: true },
+  { key: "khmer_cambodia", languageCode: "km", languageName: "ខ្មែរ", translator: "Islamic Community Development Association", isPrimary: false },
   { key: "bisayan_rwwad", languageCode: "ceb", languageName: "Cebuano", translator: "Rowwad Translation Center", isPrimary: true },
   { key: "iranun_sarro", languageCode: "mrw", languageName: "Iranun", translator: "Sarro", isPrimary: true },
   { key: "maguindanao_rwwad", languageCode: "mdh", languageName: "Maguindanaon", translator: "Rowwad Translation Center", isPrimary: true },
@@ -148,6 +150,8 @@ const TRANSLATIONS: TranslationConfig[] = [
   // dagbani_ghutubo — not available on QuranEnc, dropped
   { key: "afar_hamza", languageCode: "aa", languageName: "Afar", translator: "Hamza", isPrimary: true },
   { key: "amharic_zain", languageCode: "am", languageName: "አማርኛ", translator: "Africa Academy (Zain)", isPrimary: false },
+  { key: "hausa_gummi", languageCode: "ha", languageName: "Hausa", translator: "Abu Bakr Jumi", isPrimary: true },
+  { key: "ankobambara_dayyan", languageCode: "nqo", languageName: "ߒߞߏ", translator: "Baba Mamadi Dayyan", isPrimary: true },
 ];
 
 // ---- Helpers ----

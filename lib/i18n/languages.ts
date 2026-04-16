@@ -101,6 +101,8 @@ export const LANGUAGES: Record<string, Language> = {
   rw: { code: "rw", name: "Kinyarwanda", nameEn: "Kinyarwanda", dir: "ltr", translationKey: "kinyarwanda_assoc" },
   rn: { code: "rn", name: "Kirundi", nameEn: "Kirundi", dir: "ltr", translationKey: "ikirundi_gehiti" },
   aa: { code: "aa", name: "Afar", nameEn: "Afar", dir: "ltr", translationKey: "afar_hamza" },
+  ha: { code: "ha", name: "Hausa", nameEn: "Hausa", dir: "ltr", translationKey: "hausa_gummi" },
+  nqo: { code: "nqo", name: "ߒߞߏ", nameEn: "N'Ko", dir: "rtl", translationKey: "ankobambara_dayyan" },
 };
 
 export const SUPPORTED_LOCALES = Object.keys(LANGUAGES);
