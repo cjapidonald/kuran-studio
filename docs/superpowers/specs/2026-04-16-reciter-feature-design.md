@@ -34,7 +34,7 @@ Let readers listen to the Quran in Arabic while the active word is highlighted i
 **API:** Quran.com API v4, no key required.
 
 - `GET https://api.quran.com/api/v4/recitations` — list all reciters; used at seed time to map slugs to numeric IDs.
-- `GET https://api.quran.com/api/v4/recitations/{recitation_id}/by_chapter/{chapter_number}` — returns `audio_files[]`, each `{ verse_key, url, segments }`. `segments` is an array of `[word_index, start_ms, end_ms]` triples — exactly what word-level karaoke needs.
+- `GET https://api.quran.com/api/v4/recitations/{recitation_id}/by_chapter/{chapter_number}` — returns `audio_files[]`, each `{ verse_key, url, segments }`. `segments` is an array whose first three elements per entry are `[word_index, start_ms, end_ms]`. Any trailing elements (some reciters emit extra audio-seek markers) are ignored; the seed script stores only the `[word_index, start_ms, end_ms]` triple per word.
 
 **Initial reciters (resolved to IDs at seed time; hard-coded IDs are approximate, verified against the live `/recitations` response):**
 
