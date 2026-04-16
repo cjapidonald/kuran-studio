@@ -95,12 +95,84 @@ async function seedReciters(ids: Map<string, number>) {
   console.log(`  upserted ${rows.length} reciters`);
 }
 
+interface QuranComAudioFile {
+  verse_key: string;        // e.g. "2:43"
+  url: string;              // relative, e.g. "Alafasy/mp3/002043.mp3"
+  segments: number[][];     // each element: [segment_idx, word_number_1based, start_ms, end_ms]
+}
+
+function absolutizeAudioUrl(url: string): string {
+  if (url.startsWith("http://") || url.startsWith("https://")) return url;
+  return `https://verses.quran.com/${url.replace(/^\/+/, "")}`;
+}
+
+// Quran.com segments are 4-tuples: [segment_index, word_number_1based, start_ms, end_ms].
+// Normalize to [word_index_0based, start_ms, end_ms].
+function normalizeSegments(raw: number[][]): [number, number, number][] {
+  const out: [number, number, number][] = [];
+  for (const s of raw) {
+    if (!Array.isArray(s) || s.length < 4) continue;
+    const word0 = Math.max(0, Math.floor(s[1] - 1));
+    const start = Math.max(0, Math.floor(s[2]));
+    const end = Math.max(start, Math.floor(s[3]));
+    out.push([word0, start, end]);
+  }
+  return out;
+}
+
+async function seedOneSurah(slug: string, quranComId: number, surah: number): Promise<number> {
+  // `fields=segments` is required — without it, Quran.com omits segment arrays.
+  // `per_page=300` covers even Al-Baqarah (286 ayahs) in a single page.
+  const url = `${QURAN_COM_API}/recitations/${quranComId}/by_chapter/${surah}?fields=segments&per_page=300`;
+  const data = await fetchJson<{ audio_files: QuranComAudioFile[] }>(url);
+  if (!data.audio_files || data.audio_files.length === 0) {
+    throw new Error(`No audio_files for ${slug} surah ${surah}`);
+  }
+  const rows = data.audio_files.map((af) => {
+    const [sStr, aStr] = af.verse_key.split(":");
+    const segments = normalizeSegments(af.segments || []);
+    const duration_ms = segments.length > 0 ? segments[segments.length - 1][2] : 0;
+    if (duration_ms === 0) {
+      console.warn(`    zero duration for ${slug} ${af.verse_key} (no segments?)`);
+    }
+    return {
+      reciter_slug: slug,
+      surah: parseInt(sStr, 10),
+      ayah: parseInt(aStr, 10),
+      audio_url: absolutizeAudioUrl(af.url),
+      duration_ms,
+      segments,
+    };
+  });
+  const { error } = await supabase
+    .from("recitations")
+    .upsert(rows, { onConflict: "reciter_slug,surah,ayah" });
+  if (error) throw error;
+  return rows.length;
+}
+
+async function seedRecitations(ids: Map<string, number>, onlySlug?: string) {
+  const slugs = onlySlug ? [onlySlug] : RECITERS.map((r) => r.slug);
+  for (const slug of slugs) {
+    const quranComId = ids.get(slug);
+    if (!quranComId) throw new Error(`No resolved Quran.com id for ${slug}`);
+    for (let surah = 1; surah <= 114; surah++) {
+      const n = await seedOneSurah(slug, quranComId, surah);
+      console.log(`[${slug}] ${surah}/114 (${n} ayahs)`);
+      await new Promise((r) => setTimeout(r, 150));
+    }
+  }
+}
+
 async function main() {
+  const onlySlug = process.argv.find((a) => a.startsWith("--only="))?.split("=")[1];
   console.log("seed-reciters: resolving Quran.com IDs");
   const ids = await resolveReciterIds();
-  console.log("seed-reciters: seeding reciters table");
+  console.log("seed-reciters: upserting reciters");
   await seedReciters(ids);
-  console.log("seed-reciters: done (reciters only — recitations in next task)");
+  console.log(`seed-reciters: seeding recitations${onlySlug ? ` (only ${onlySlug})` : ""}`);
+  await seedRecitations(ids, onlySlug);
+  console.log("seed-reciters: done");
 }
 
 main().catch((err) => {
