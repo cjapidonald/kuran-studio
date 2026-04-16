@@ -11,12 +11,21 @@ async function main() {
   const outDir = path.join(process.cwd(), "lib/quran/descriptions-translated");
   fs.mkdirSync(outDir, { recursive: true });
 
-  // Get all unique languages
-  const { data: langsData } = await supabase
-    .from("surah_descriptions")
-    .select("lang");
-
-  const langs = Array.from(new Set((langsData || []).map((r: { lang: string }) => r.lang))).sort();
+  // Get all unique languages by paginating
+  const allLangs = new Set<string>();
+  let offset = 0;
+  const PAGE = 1000;
+  while (true) {
+    const { data } = await supabase
+      .from("surah_descriptions")
+      .select("lang")
+      .range(offset, offset + PAGE - 1);
+    if (!data || data.length === 0) break;
+    data.forEach((r: { lang: string }) => allLangs.add(r.lang));
+    if (data.length < PAGE) break;
+    offset += PAGE;
+  }
+  const langs = Array.from(allLangs).sort();
   console.log(`Exporting ${langs.length} languages: ${langs.join(", ")}`);
 
   for (const lang of langs) {
