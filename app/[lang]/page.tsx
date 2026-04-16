@@ -5,6 +5,9 @@ import { LandingFooter } from "@/components/landing/footer";
 import { FlickeringGrid } from "@/components/ui/flickering-grid";
 import { FadeIn } from "@/components/landing/fade-in";
 import { LanguageSelector } from "@/components/layout/language-selector";
+import { fetchReciters, fetchRecitation, pickDefaultReciter } from "@/lib/quran/recitations";
+import { RecitationProvider } from "@/components/reader/recitation-provider";
+import { ReciterPlayer } from "@/components/reader/reciter-player";
 
 interface PageProps {
   params: Promise<{ lang: string }>;
@@ -55,6 +58,14 @@ function ReaderMockup({ dict, lang }: { dict: Record<string, string>; lang: stri
 export default async function LandingPage({ params }: PageProps) {
   const { lang } = await params;
   const dict = await getDictionary(lang);
+
+  // Sample player: Al-Fatiha with default reciter.
+  const reciters = await fetchReciters();
+  const defaultReciter = pickDefaultReciter(reciters);
+  const initialRecitation = defaultReciter
+    ? await fetchRecitation(defaultReciter.slug, 1)
+    : [];
+  const hasPlayer = Boolean(defaultReciter) && initialRecitation.length > 0;
 
   const websiteJsonLd = {
     "@context": "https://schema.org",
@@ -119,27 +130,52 @@ export default async function LandingPage({ params }: PageProps) {
         </div>
         <div className="absolute top-20 left-1/2 -translate-x-1/2 w-[600px] h-[400px] bg-emerald-500/5 blur-[120px] rounded-full" />
 
-        <div className="relative max-w-3xl mx-auto text-center">
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-gray-800 bg-gray-900/50 text-xs text-gray-400 mb-6">
-            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-            {dict["landing.badge"]}
+        <div className="relative max-w-6xl mx-auto grid md:grid-cols-2 gap-10 md:gap-14 items-center">
+          {/* Left: text + CTAs */}
+          <div className="text-left">
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-gray-800 bg-gray-900/50 text-xs text-gray-400 mb-6">
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+              {dict["landing.badge"]}
+            </div>
+
+            <h1 className="text-5xl md:text-6xl lg:text-7xl font-black tracking-tight leading-[0.95]">
+              {dict["landing.title.line1"]}<br />
+              <span className="text-emerald-400">{dict["landing.title.line2"]}</span>
+            </h1>
+            <p className="mt-6 text-lg text-gray-400 max-w-lg leading-relaxed">
+              {dict["landing.subtitle"]}
+            </p>
+
+            <div className="mt-8 flex gap-3">
+              <Link href={`/${lang}/1`} className="px-8 py-3 bg-emerald-500 hover:bg-emerald-400 text-black font-bold rounded-lg text-base transition shadow-lg shadow-emerald-500/20">
+                {dict["landing.cta.start"]}
+              </Link>
+              <a href={`/${lang}#features`} className="px-6 py-3 border border-gray-700 hover:border-gray-500 text-gray-300 rounded-lg transition">
+                {dict["landing.cta.learn"]}
+              </a>
+            </div>
           </div>
 
-          <h1 className="text-5xl md:text-6xl lg:text-7xl font-black tracking-tight leading-[0.95]">
-            {dict["landing.title.line1"]}<br />
-            <span className="text-emerald-400">{dict["landing.title.line2"]}</span>
-          </h1>
-          <p className="mt-6 text-lg text-gray-400 max-w-lg mx-auto leading-relaxed">
-            {dict["landing.subtitle"]}
-          </p>
-
-          <div className="mt-8 flex gap-3 justify-center">
-            <Link href={`/${lang}/1`} className="px-8 py-3 bg-emerald-500 hover:bg-emerald-400 text-black font-bold rounded-lg text-base transition shadow-lg shadow-emerald-500/20">
-              {dict["landing.cta.start"]}
-            </Link>
-            <a href={`/${lang}#features`} className="px-6 py-3 border border-gray-700 hover:border-gray-500 text-gray-300 rounded-lg transition">
-              {dict["landing.cta.learn"]}
-            </a>
+          {/* Right: sample player */}
+          <div className="flex md:justify-end justify-center">
+            {hasPlayer && defaultReciter ? (
+              <RecitationProvider
+                surah={1}
+                reciters={reciters}
+                initialReciter={defaultReciter}
+                initialRecitation={initialRecitation}
+                disableGlobalShortcuts
+              >
+                <div className="w-full max-w-sm">
+                  <p className="text-[10px] text-emerald-500 font-mono tracking-widest mb-3 text-center md:text-right">
+                    AL-FATIHA &middot; {defaultReciter.display_name.split(" ").slice(-2).join(" ")}
+                  </p>
+                  <div className="flex md:justify-end justify-center">
+                    <ReciterPlayer defaultExpanded />
+                  </div>
+                </div>
+              </RecitationProvider>
+            ) : null}
           </div>
         </div>
       </section>

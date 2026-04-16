@@ -8,6 +8,7 @@ export interface PlayerState {
   currentMs: number;          // playback position within current ayah
   durationMs: number;         // duration of current ayah
   rate: number;               // 0.75 | 1.0 | 1.25 | 1.5
+  volume: number;             // 0.0 – 1.0
   autoScroll: boolean;
 }
 
@@ -20,6 +21,7 @@ export interface RecitationStore {
   setStatus: (s: PlayerState["status"]) => void;
   setTime: (currentMs: number, durationMs: number) => void;
   setRate: (rate: number) => void;
+  setVolume: (v: number) => void;
   setAutoScroll: (on: boolean) => void;
   getRecitation: () => RecitationAyah[];
 }
@@ -36,6 +38,7 @@ export function createRecitationStore(
     currentMs: 0,
     durationMs: initialRecitation[0]?.duration_ms ?? 0,
     rate: 1.0,
+    volume: 1.0,
     autoScroll: true,
   };
   let recitation: RecitationAyah[] = initialRecitation;
@@ -73,6 +76,12 @@ export function createRecitationStore(
     setRate: (rate) => {
       if (rate === state.rate) return;
       state = { ...state, rate };
+      notify();
+    },
+    setVolume: (v) => {
+      const clamped = Math.max(0, Math.min(1, v));
+      if (clamped === state.volume) return;
+      state = { ...state, volume: clamped };
       notify();
     },
     setAutoScroll: (on) => {

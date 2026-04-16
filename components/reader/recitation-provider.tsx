@@ -22,6 +22,7 @@ import {
 } from "./recitation-store";
 
 const LS_KEY = "kurani-reciter";
+const LS_VOLUME = "kurani-volume";
 
 interface ContextValue {
   store: RecitationStore;
@@ -37,6 +38,9 @@ export interface RecitationProviderProps {
   reciters: Reciter[];
   initialReciter: Reciter;
   initialRecitation: RecitationAyah[];
+  /** Disable global keyboard shortcuts + auto-scroll observer. Use on pages
+   *  that embed the player outside the reader (e.g., landing). */
+  disableGlobalShortcuts?: boolean;
   children: React.ReactNode;
 }
 
@@ -45,6 +49,7 @@ export function RecitationProvider({
   reciters,
   initialReciter,
   initialRecitation,
+  disableGlobalShortcuts,
   children,
 }: RecitationProviderProps) {
   const storeRef = useRef<RecitationStore | null>(null);
@@ -57,6 +62,14 @@ export function RecitationProvider({
   if (typeof window !== "undefined" && !audioRef.current) {
     audioRef.current = new Audio();
     audioRef.current.preload = "auto";
+    const savedVol = localStorage.getItem(LS_VOLUME);
+    if (savedVol !== null) {
+      const v = Math.max(0, Math.min(1, parseFloat(savedVol)));
+      if (!Number.isNaN(v)) {
+        audioRef.current.volume = v;
+        store.setVolume(v);
+      }
+    }
   }
 
   // Honor localStorage preference on mount (if different from server default).
@@ -176,6 +189,7 @@ export function RecitationProvider({
 
   // Auto-scroll active ayah into view on ayahIndex change.
   useEffect(() => {
+    if (disableGlobalShortcuts) return;
     return store.subscribe(() => {
       const s = store.getState();
       if (!s.autoScroll) return;
@@ -186,10 +200,11 @@ export function RecitationProvider({
       const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
       el.scrollIntoView({ behavior: reduce ? "auto" : "smooth", block: "center" });
     });
-  }, [store]);
+  }, [store, disableGlobalShortcuts]);
 
   // If user scrolls during playback (outside a programmatic scroll window), pause auto-scroll.
   useEffect(() => {
+    if (disableGlobalShortcuts) return;
     const onScroll = () => {
       if (Date.now() < programmaticScrollUntilRef.current) return;
       const s = store.getState();
@@ -199,7 +214,7 @@ export function RecitationProvider({
     };
     window.addEventListener("scroll", onScroll, { passive: true });
     return () => window.removeEventListener("scroll", onScroll);
-  }, [store]);
+  }, [store, disableGlobalShortcuts]);
 
   // Re-arm auto-scroll when user explicitly presses play after a pause.
   useEffect(() => {
@@ -213,6 +228,7 @@ export function RecitationProvider({
 
   // Spacebar toggles play/pause; ←/→ step ayahs. Ignored when focus is inside form controls.
   useEffect(() => {
+    if (disableGlobalShortcuts) return;
     const onKey = (e: KeyboardEvent) => {
       const target = e.target as HTMLElement | null;
       if (target && /^(INPUT|TEXTAREA|SELECT|BUTTON)$/.test(target.tagName)) return;
@@ -242,7 +258,7 @@ export function RecitationProvider({
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [store]);
+  }, [store, disableGlobalShortcuts]);
 
   const value = useMemo<ContextValue>(
     () => ({ store, surah, reciters, audioRef }),
@@ -317,6 +333,7 @@ export function usePlayerState() {
       durationMs: s.durationMs,
       ayahIndex: s.ayahIndex,
       rate: s.rate,
+      volume: s.volume,
       autoScroll: s.autoScroll,
     }),
     shallowEq,
@@ -414,9 +431,21 @@ export function usePlayerActions() {
     [store, audioRef],
   );
 
+  const setVolume = useCallback(
+    (v: number) => {
+      store.setVolume(v);
+      const clamped = Math.max(0, Math.min(1, v));
+      if (audioRef.current) audioRef.current.volume = clamped;
+      if (typeof window !== "undefined") {
+        localStorage.setItem(LS_VOLUME, String(clamped));
+      }
+    },
+    [store, audioRef],
+  );
+
   const recenter = useCallback(() => {
     store.setAutoScroll(true);
   }, [store]);
 
-  return { play, pause, seek, nextAyah, prevAyah, setReciter, setRate, recenter };
+  return { play, pause, seek, nextAyah, prevAyah, setReciter, setRate, setVolume, recenter };
 }

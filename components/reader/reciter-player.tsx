@@ -16,8 +16,8 @@ function formatMs(ms: number) {
   return `${m}:${s.toString().padStart(2, "0")}`;
 }
 
-export function ReciterPlayer() {
-  const [expanded, setExpanded] = useState(false);
+export function ReciterPlayer({ defaultExpanded = false }: { defaultExpanded?: boolean } = {}) {
+  const [expanded, setExpanded] = useState(defaultExpanded);
   const state = usePlayerState();
   const actions = usePlayerActions();
   const isPlaying = state.status === "playing";
@@ -213,6 +213,40 @@ function ExpandedPanel({
         >
           {state.rate.toFixed(2)}×
         </button>
+      </div>
+
+      <div className="mt-3 flex items-center gap-2">
+        <button
+          aria-label={state.volume === 0 ? "Unmute" : "Mute"}
+          onClick={() => actions.setVolume(state.volume === 0 ? 1 : 0)}
+          className="w-7 h-7 rounded-full text-white/70 hover:text-white hover:bg-white/10 transition-colors flex items-center justify-center shrink-0"
+        >
+          {state.volume === 0 ? (
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
+              <path d="M3 9v6h4l5 5V4L7 9H3zm13.59 3L14 9.41 15.41 8 18 10.59 20.59 8 22 9.41 19.41 12 22 14.59 20.59 16 18 13.41 15.41 16 14 14.59 16.59 12z" />
+            </svg>
+          ) : state.volume < 0.5 ? (
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
+              <path d="M3 9v6h4l5 5V4L7 9H3zm12 .17v5.66c1.18-.77 2-2.08 2-3.83s-.82-3.06-2-3.83z" />
+            </svg>
+          ) : (
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
+              <path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77z" />
+            </svg>
+          )}
+        </button>
+        <input
+          type="range"
+          min={0}
+          max={100}
+          value={Math.round(state.volume * 100)}
+          onChange={(e) => actions.setVolume(Number(e.target.value) / 100)}
+          aria-label="Volume"
+          className="flex-1 accent-emerald-400"
+        />
+        <span className="text-[10px] text-white/50 font-mono w-7 text-right">
+          {Math.round(state.volume * 100)}
+        </span>
       </div>
 
       <div className="mt-3 flex items-center justify-between text-xs">
