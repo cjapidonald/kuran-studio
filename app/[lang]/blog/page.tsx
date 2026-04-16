@@ -19,7 +19,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
 export default async function BlogPage({ params }: PageProps) {
   const { lang } = await params;
   const dict = await getDictionary(lang);
-  const posts = getBlogPosts(lang);
+  const posts = await getBlogPosts(lang);
 
   return (
     <div className="min-h-screen bg-gray-950 text-gray-200">

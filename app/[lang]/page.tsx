@@ -4,6 +4,7 @@ import { LANGUAGES, SUPPORTED_LOCALES } from "@/lib/i18n/languages";
 import { LandingFooter } from "@/components/landing/footer";
 import { FlickeringGrid } from "@/components/ui/flickering-grid";
 import { FadeIn } from "@/components/landing/fade-in";
+import { LanguageSelector } from "@/components/layout/language-selector";
 
 interface PageProps {
   params: Promise<{ lang: string }>;
@@ -63,8 +64,10 @@ export default async function LandingPage({ params }: PageProps) {
           <span className="w-7 h-7 bg-emerald-500 rounded-md flex items-center justify-center text-xs text-gray-950 font-black">Q</span>
           <span className="font-bold text-white">Kuran<span className="text-emerald-400">.</span></span>
         </Link>
-        <div className="flex items-center gap-4">
-          <a href={`/${lang}#features`} className="text-xs text-gray-400 hover:text-white transition hidden sm:inline">{dict["nav.features"]}</a>
+        <div className="flex items-center gap-2">
+          <a href={`/${lang}#features`} className="text-xs text-gray-400 hover:text-white transition hidden sm:inline mr-2">{dict["nav.features"]}</a>
+          <Link href={`/${lang}/blog`} className="text-xs text-gray-400 hover:text-white transition hidden sm:inline mr-2">{dict["nav.blog"]}</Link>
+          <LanguageSelector currentLang={lang} />
           <Link href={`/${lang}/login`} className="text-xs px-4 py-1.5 rounded-md bg-white/5 hover:bg-white/10 text-gray-300 transition">
             {dict["nav.login"]}
           </Link>

@@ -1,6 +1,6 @@
 import { notFound } from "next/navigation";
 import Link from "next/link";
-import { getBlogPost, getBlogPosts } from "@/lib/blog";
+import { getBlogPost, getAllBlogPostPaths } from "@/lib/blog";
 import { getDictionary } from "@/lib/i18n/get-dictionary";
 import { MDXRemote } from "next-mdx-remote/rsc";
 import type { Metadata } from "next";
@@ -10,21 +10,12 @@ interface PageProps {
 }
 
 export async function generateStaticParams() {
-  const locales = ["en", "sq"];
-  const params: { lang: string; slug: string }[] = [];
-
-  for (const lang of locales) {
-    const posts = getBlogPosts(lang);
-    for (const post of posts) {
-      params.push({ lang, slug: post.slug });
-    }
-  }
-  return params;
+  return getAllBlogPostPaths();
 }
 
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
   const { lang, slug } = await params;
-  const post = getBlogPost(lang, slug);
+  const post = await getBlogPost(lang, slug);
   if (!post) return { title: "Not found" };
 
   return {
@@ -56,7 +47,7 @@ const mdxComponents = {
 
 export default async function BlogPostPage({ params }: PageProps) {
   const { lang, slug } = await params;
-  const post = getBlogPost(lang, slug);
+  const post = await getBlogPost(lang, slug);
   if (!post) notFound();
 
   const dict = await getDictionary(lang);

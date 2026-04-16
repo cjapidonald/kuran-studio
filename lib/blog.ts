@@ -1,8 +1,4 @@
-import fs from "fs";
-import path from "path";
-import matter from "gray-matter";
-
-const contentDir = path.join(process.cwd(), "content/blog");
+import { createClient } from "@supabase/supabase-js";
 
 export interface BlogPost {
   slug: string;
@@ -24,43 +20,85 @@ export interface BlogPostMeta {
   tags: string[];
 }
 
-export function getBlogPosts(locale: string): BlogPostMeta[] {
-  const dir = path.join(contentDir, locale);
-  if (!fs.existsSync(dir)) return [];
-
-  const files = fs.readdirSync(dir).filter((f) => f.endsWith(".mdx"));
-
-  return files
-    .map((file) => {
-      const raw = fs.readFileSync(path.join(dir, file), "utf-8");
-      const { data } = matter(raw);
-      return {
-        slug: file.replace(".mdx", ""),
-        title: data.title || "",
-        description: data.description || "",
-        date: data.date || "",
-        author: data.author || "Donald Cjapi",
-        tags: data.tags || [],
-      };
-    })
-    .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+function getSupabase() {
+  return createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    { auth: { persistSession: false } }
+  );
 }
 
-export function getBlogPost(locale: string, slug: string): BlogPost | null {
-  const filePath = path.join(contentDir, locale, `${slug}.mdx`);
-  if (!fs.existsSync(filePath)) return null;
+interface BlogRow {
+  slug: string;
+  lang: string;
+  title: string;
+  description: string | null;
+  content: string;
+  date: string;
+  author: string;
+  tags: string[];
+}
 
-  const raw = fs.readFileSync(filePath, "utf-8");
-  const { data, content } = matter(raw);
+export async function getBlogPosts(locale: string): Promise<BlogPostMeta[]> {
+  try {
+    const supabase = getSupabase();
+    const { data } = await supabase
+      .from("blog_posts")
+      .select("slug, title, description, date, author, tags")
+      .eq("lang", locale)
+      .eq("published", true)
+      .order("date", { ascending: false });
 
-  return {
-    slug,
-    title: data.title || "",
-    description: data.description || "",
-    date: data.date || "",
-    author: data.author || "Donald Cjapi",
-    tags: data.tags || [],
-    locale,
-    content,
-  };
+    if (!data) return [];
+    return data.map((r: Omit<BlogRow, "lang" | "content">) => ({
+      slug: r.slug,
+      title: r.title,
+      description: r.description || "",
+      date: r.date,
+      author: r.author,
+      tags: r.tags || [],
+    }));
+  } catch {
+    return [];
+  }
+}
+
+export async function getBlogPost(locale: string, slug: string): Promise<BlogPost | null> {
+  try {
+    const supabase = getSupabase();
+    const { data, error } = await supabase
+      .from("blog_posts")
+      .select("slug, title, description, content, date, author, tags")
+      .eq("lang", locale)
+      .eq("slug", slug)
+      .eq("published", true)
+      .single();
+
+    if (error || !data) return null;
+    return {
+      slug: data.slug,
+      title: data.title,
+      description: data.description || "",
+      date: data.date,
+      author: data.author,
+      tags: data.tags || [],
+      locale,
+      content: data.content,
+    };
+  } catch {
+    return null;
+  }
+}
+
+export async function getAllBlogPostPaths(): Promise<{ lang: string; slug: string }[]> {
+  try {
+    const supabase = getSupabase();
+    const { data } = await supabase
+      .from("blog_posts")
+      .select("lang, slug")
+      .eq("published", true);
+    return data || [];
+  } catch {
+    return [];
+  }
 }

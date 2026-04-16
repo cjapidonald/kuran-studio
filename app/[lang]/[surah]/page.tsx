@@ -5,6 +5,7 @@ import { SURAHS } from "@/lib/quran/surahs";
 import { LANGUAGES, SUPPORTED_LOCALES } from "@/lib/i18n/languages";
 import { getDictionary } from "@/lib/i18n/get-dictionary";
 import { AyahDisplay } from "@/components/reader/ayah-display";
+import { LanguageSelector } from "@/components/layout/language-selector";
 import type { Metadata } from "next";
 
 interface PageProps {
@@ -97,12 +98,12 @@ export default async function SurahPage({ params }: PageProps) {
       />
       {/* Header bar */}
       <nav className="sticky top-0 z-50 bg-gray-950/80 backdrop-blur-md border-b border-white/5">
-        <div className="max-w-3xl mx-auto flex items-center justify-between px-4 py-3">
-          <Link href={`/${lang}`} className="text-xs text-emerald-500 hover:text-emerald-400 font-mono tracking-widest transition-colors">
+        <div className="max-w-3xl mx-auto flex items-center justify-between gap-2 px-4 py-3">
+          <Link href={`/${lang}`} className="text-xs text-emerald-500 hover:text-emerald-400 font-mono tracking-widest transition-colors shrink-0">
             &larr; {dict["reader.back"]}
           </Link>
-          <span className="text-xs text-gray-500 font-mono">{meta.transliteration}</span>
-          <div className="w-12" />
+          <span className="text-xs text-gray-500 font-mono hidden sm:inline">{meta.transliteration}</span>
+          <LanguageSelector currentLang={lang} />
         </div>
       </nav>
 
