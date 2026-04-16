@@ -6,6 +6,7 @@ import {
   usePlayerActions,
   usePlayerState,
   useReciterList,
+  useRecitationArray,
   useTotalAyahs,
 } from "./recitation-provider";
 import { SURAHS } from "@/lib/quran/surahs";
@@ -181,18 +182,40 @@ function ExpandedPanel({
   onFullscreen: () => void;
 }) {
   const reciters = useReciterList();
+  const recitation = useRecitationArray();
   const totalAyahs = useTotalAyahs();
   const isPlaying = state.status === "playing";
-  const progress = state.durationMs > 0 ? state.currentMs / state.durationMs : 0;
+
+  // Surah-level timeline: treat the whole surah as one continuous audio track.
+  const cumDurations = (() => {
+    const out: number[] = [0];
+    let acc = 0;
+    for (const a of recitation) {
+      acc += a.duration_ms;
+      out.push(acc);
+    }
+    return out;
+  })();
+  const surahTotalMs = cumDurations[recitation.length] || 0;
+  const surahCurrentMs = (cumDurations[state.ayahIndex] || 0) + state.currentMs;
+  const surahProgress = surahTotalMs > 0 ? surahCurrentMs / surahTotalMs : 0;
 
   const onPickSurah = (e: React.ChangeEvent<HTMLSelectElement>) => {
     const n = Number(e.target.value);
     if (!Number.isNaN(n) && n >= 1 && n <= 114) actions.setSurah(n);
   };
 
-  const onScrub = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const onScrubSurah = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (surahTotalMs === 0) return;
     const pct = Number(e.target.value) / 1000;
-    actions.seek(pct * state.durationMs);
+    actions.seekInSurah(pct * surahTotalMs);
+  };
+
+  const prevSurah = () => {
+    if (state.surah > 1) actions.setSurah(state.surah - 1);
+  };
+  const nextSurah = () => {
+    if (state.surah < 114) actions.setSurah(state.surah + 1);
   };
 
   const cycleRate = () => {
@@ -214,7 +237,7 @@ function ExpandedPanel({
       animate={{ opacity: 1, scale: 1 }}
       exit={{ opacity: 0, scale: 0.96 }}
       transition={{ type: "spring", stiffness: 240, damping: 28 }}
-      className={`${showSurahControls ? "w-[520px]" : "w-[300px]"} p-4 rounded-2xl
+      className={`${showSurahControls ? "w-[640px] max-w-[94vw]" : "w-[300px]"} p-4 rounded-2xl
                  bg-white/5 backdrop-blur-xl backdrop-saturate-150
                  border border-white/10 text-white/90
                  bg-[radial-gradient(circle_at_30%_0%,rgba(16,185,129,0.2),transparent_60%)]
@@ -250,14 +273,14 @@ function ExpandedPanel({
           type="range"
           min={0}
           max={1000}
-          value={Math.round(progress * 1000)}
-          onChange={onScrub}
-          aria-label="Seek within ayah"
+          value={Math.round(surahProgress * 1000)}
+          onChange={onScrubSurah}
+          aria-label="Seek within surah"
           className="w-full accent-emerald-400"
         />
         <div className="flex justify-between text-[10px] text-white/60 font-mono mt-0.5">
-          <span>{formatMs(state.currentMs)}</span>
-          <span>{formatMs(state.durationMs)}</span>
+          <span>{formatMs(surahCurrentMs)}</span>
+          <span>{formatMs(surahTotalMs)}</span>
         </div>
       </div>
 
@@ -277,96 +300,98 @@ function ExpandedPanel({
         </div>
       )}
 
-      <div className="mt-3 flex items-center justify-between">
-        <div className="flex items-center gap-1">
-          {showSurahControls && (
-            <button
-              aria-label="Shuffle surahs"
-              aria-pressed={state.shuffle}
-              onClick={() => actions.setShuffle(!state.shuffle)}
-              className={`w-8 h-8 rounded-full transition-colors flex items-center justify-center ${
-                state.shuffle
-                  ? "text-emerald-400 bg-emerald-500/15"
-                  : "text-white/60 hover:text-white hover:bg-white/10"
-              }`}
-            >
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
-                <path d="M10.59 9.17L5.41 4 4 5.41l5.17 5.17 1.42-1.41zM14.5 4l2.04 2.04L4 18.59 5.41 20 17.96 7.46 20 9.5V4h-5.5zm.33 9.41l-1.41 1.41 3.13 3.13L14.5 20H20v-5.5l-2.04 2.04-3.13-3.13z" />
-              </svg>
-            </button>
-          )}
+      {/* Transport — centered: shuffle · prev · play · next · repeat */}
+      <div className="mt-3 flex items-center justify-center gap-2">
+        {showSurahControls && (
           <button
-            aria-label="Previous ayah"
-            onClick={actions.prevAyah}
-            className="w-8 h-8 rounded-full hover:bg-white/10 transition-colors flex items-center justify-center"
+            aria-label="Shuffle surahs"
+            aria-pressed={state.shuffle}
+            onClick={() => actions.setShuffle(!state.shuffle)}
+            className={`w-9 h-9 rounded-full transition-colors flex items-center justify-center ${
+              state.shuffle
+                ? "text-emerald-400 bg-emerald-500/15"
+                : "text-white/60 hover:text-white hover:bg-white/10"
+            }`}
           >
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
-              <path d="M6 6h2v12H6zM9 12l11-7v14z" />
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor">
+              <path d="M10.59 9.17L5.41 4 4 5.41l5.17 5.17 1.42-1.41zM14.5 4l2.04 2.04L4 18.59 5.41 20 17.96 7.46 20 9.5V4h-5.5zm.33 9.41l-1.41 1.41 3.13 3.13L14.5 20H20v-5.5l-2.04 2.04-3.13-3.13z" />
             </svg>
           </button>
+        )}
+        <button
+          aria-label={showSurahControls ? "Previous surah" : "Previous ayah"}
+          onClick={showSurahControls ? prevSurah : actions.prevAyah}
+          disabled={showSurahControls && state.surah <= 1}
+          className="w-9 h-9 rounded-full hover:bg-white/10 disabled:opacity-40 transition-colors flex items-center justify-center"
+        >
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor">
+            <path d="M6 6h2v12H6zM9 12l11-7v14z" />
+          </svg>
+        </button>
+        <button
+          aria-label={isPlaying ? "Pause" : "Play"}
+          onClick={() => (isPlaying ? actions.pause() : actions.play())}
+          className="w-12 h-12 rounded-full bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-400 flex items-center justify-center transition-colors"
+        >
+          {isPlaying ? (
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
+              <rect x="6" y="5" width="4" height="14" rx="1" />
+              <rect x="14" y="5" width="4" height="14" rx="1" />
+            </svg>
+          ) : (
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
+              <path d="M7 5v14l12-7z" />
+            </svg>
+          )}
+        </button>
+        <button
+          aria-label={showSurahControls ? "Next surah" : "Next ayah"}
+          onClick={showSurahControls ? nextSurah : actions.nextAyah}
+          disabled={showSurahControls && state.surah >= 114}
+          className="w-9 h-9 rounded-full hover:bg-white/10 disabled:opacity-40 transition-colors flex items-center justify-center"
+        >
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor">
+            <path d="M16 6h2v12h-2zM15 12L4 19V5z" />
+          </svg>
+        </button>
+        {showSurahControls && (
           <button
-            aria-label={isPlaying ? "Pause" : "Play"}
-            onClick={() => (isPlaying ? actions.pause() : actions.play())}
-            className="w-10 h-10 rounded-full bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-400 flex items-center justify-center transition-colors"
+            aria-label="Repeat surah"
+            aria-pressed={state.repeat}
+            onClick={() => actions.setRepeat(!state.repeat)}
+            className={`w-9 h-9 rounded-full transition-colors flex items-center justify-center ${
+              state.repeat
+                ? "text-emerald-400 bg-emerald-500/15"
+                : "text-white/60 hover:text-white hover:bg-white/10"
+            }`}
           >
-            {isPlaying ? (
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
-                <rect x="6" y="5" width="4" height="14" rx="1" />
-                <rect x="14" y="5" width="4" height="14" rx="1" />
-              </svg>
-            ) : (
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
-                <path d="M7 5v14l12-7z" />
-              </svg>
-            )}
-          </button>
-          <button
-            aria-label="Next ayah"
-            onClick={actions.nextAyah}
-            className="w-8 h-8 rounded-full hover:bg-white/10 transition-colors flex items-center justify-center"
-          >
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
-              <path d="M16 6h2v12h-2zM15 12L4 19V5z" />
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor">
+              <path d="M7 7h10v3l4-4-4-4v3H5v6h2V7zm10 10H7v-3l-4 4 4 4v-3h12v-6h-2v4z" />
             </svg>
           </button>
-          {showSurahControls && (
-            <button
-              aria-label="Repeat surah"
-              aria-pressed={state.repeat}
-              onClick={() => actions.setRepeat(!state.repeat)}
-              className={`w-8 h-8 rounded-full transition-colors flex items-center justify-center ${
-                state.repeat
-                  ? "text-emerald-400 bg-emerald-500/15"
-                  : "text-white/60 hover:text-white hover:bg-white/10"
-              }`}
-            >
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
-                <path d="M7 7h10v3l4-4-4-4v3H5v6h2V7zm10 10H7v-3l-4 4 4 4v-3h12v-6h-2v4z" />
-              </svg>
-            </button>
-          )}
-        </div>
+        )}
+      </div>
 
-        <div className="flex items-center gap-1">
+      {/* Thin trailing row: speed · fullscreen · re-center */}
+      <div className="mt-2 flex items-center justify-end gap-1">
+        <button
+          onClick={cycleRate}
+          aria-label="Playback speed"
+          className="text-xs font-mono text-white/70 hover:text-white px-2 py-1 rounded-md hover:bg-white/10 transition-colors"
+        >
+          {state.rate.toFixed(2)}×
+        </button>
+        {showSurahControls && (
           <button
-            onClick={cycleRate}
-            aria-label="Playback speed"
-            className="text-xs font-mono text-white/70 hover:text-white px-2 py-1 rounded-md hover:bg-white/10 transition-colors"
+            onClick={onFullscreen}
+            aria-label="Fullscreen"
+            className="w-8 h-8 rounded-full text-white/70 hover:text-white hover:bg-white/10 transition-colors flex items-center justify-center"
           >
-            {state.rate.toFixed(2)}×
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M4 8V4h4M20 8V4h-4M4 16v4h4M20 16v4h-4" />
+            </svg>
           </button>
-          {showSurahControls && (
-            <button
-              onClick={onFullscreen}
-              aria-label="Fullscreen"
-              className="w-8 h-8 rounded-full text-white/70 hover:text-white hover:bg-white/10 transition-colors flex items-center justify-center"
-            >
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M4 8V4h4M20 8V4h-4M4 16v4h4M20 16v4h-4" />
-              </svg>
-            </button>
-          )}
-        </div>
+        )}
       </div>
 
       <div className="mt-3 flex items-center gap-2">
@@ -416,7 +441,7 @@ function ExpandedPanel({
             </option>
           ))}
         </select>
-        {showSurahControls ? (
+        {showSurahControls && (
           <select
             value={state.surah}
             onChange={onPickSurah}
@@ -429,14 +454,8 @@ function ExpandedPanel({
               </option>
             ))}
           </select>
-        ) : (
-          <span className="text-white/60 font-mono shrink-0">
-            Ayah {state.ayahIndex + 1}/{totalAyahs}
-          </span>
         )}
-      </div>
-      {showSurahControls && (
-        <div className="mt-2 flex items-center gap-2 text-xs">
+        {showSurahControls && (
           <select
             value={translationKey}
             onChange={(e) => onTranslationChange(e.target.value)}
@@ -450,11 +469,13 @@ function ExpandedPanel({
               </option>
             ))}
           </select>
-          <span className="text-white/50 font-mono shrink-0 text-[10px]">
+        )}
+        {!showSurahControls && (
+          <span className="text-white/60 font-mono shrink-0">
             Ayah {state.ayahIndex + 1}/{totalAyahs}
           </span>
-        </div>
-      )}
+        )}
+      </div>
 
       {!state.autoScroll && (
         <div className="mt-2 text-right">
@@ -489,10 +510,31 @@ function FullscreenPanel({
   displayMode: "arabic" | "translation";
   onClose: () => void;
 }) {
+  const recitation = useRecitationArray();
   const totalAyahs = useTotalAyahs();
   const isPlaying = state.status === "playing";
-  const progress = state.durationMs > 0 ? state.currentMs / state.durationMs : 0;
   const surahMeta = SURAHS.find((s) => s.number === state.surah);
+
+  // Surah-level timeline, same as ExpandedPanel.
+  const cumDurations = (() => {
+    const out: number[] = [0];
+    let acc = 0;
+    for (const a of recitation) {
+      acc += a.duration_ms;
+      out.push(acc);
+    }
+    return out;
+  })();
+  const surahTotalMs = cumDurations[recitation.length] || 0;
+  const surahCurrentMs = (cumDurations[state.ayahIndex] || 0) + state.currentMs;
+  const surahProgress = surahTotalMs > 0 ? surahCurrentMs / surahTotalMs : 0;
+
+  const prevSurah = () => {
+    if (state.surah > 1) actions.setSurah(state.surah - 1);
+  };
+  const nextSurah = () => {
+    if (state.surah < 114) actions.setSurah(state.surah + 1);
+  };
 
   // ESC closes.
   useEffect(() => {
@@ -519,7 +561,7 @@ function FullscreenPanel({
               {surahMeta ? `${surahMeta.number}. ${surahMeta.transliteration}` : `Surah ${state.surah}`}
             </p>
             <p className="text-[11px] text-white/50 font-mono">
-              {state.reciter.display_name} &middot; Ayah {state.ayahIndex + 1}/{totalAyahs}
+              {state.reciter.display_name} &middot; {formatMs(surahCurrentMs)} / {formatMs(surahTotalMs)} &middot; {totalAyahs} ayahs
             </p>
           </div>
         </div>
@@ -562,12 +604,13 @@ function FullscreenPanel({
             type="range"
             min={0}
             max={1000}
-            value={Math.round(progress * 1000)}
+            value={Math.round(surahProgress * 1000)}
             onChange={(e) => {
+              if (surahTotalMs === 0) return;
               const pct = Number(e.target.value) / 1000;
-              actions.seek(pct * state.durationMs);
+              actions.seekInSurah(pct * surahTotalMs);
             }}
-            aria-label="Seek"
+            aria-label="Seek within surah"
             className="w-full accent-emerald-400"
           />
         </div>
@@ -586,9 +629,10 @@ function FullscreenPanel({
             </svg>
           </button>
           <button
-            aria-label="Previous"
-            onClick={actions.prevAyah}
-            className="w-11 h-11 rounded-full text-white/80 hover:bg-white/10 flex items-center justify-center"
+            aria-label="Previous surah"
+            onClick={prevSurah}
+            disabled={state.surah <= 1}
+            className="w-11 h-11 rounded-full text-white/80 hover:bg-white/10 disabled:opacity-40 flex items-center justify-center"
           >
             <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
               <path d="M6 6h2v12H6zM9 12l11-7v14z" />
@@ -611,9 +655,10 @@ function FullscreenPanel({
             )}
           </button>
           <button
-            aria-label="Next"
-            onClick={actions.nextAyah}
-            className="w-11 h-11 rounded-full text-white/80 hover:bg-white/10 flex items-center justify-center"
+            aria-label="Next surah"
+            onClick={nextSurah}
+            disabled={state.surah >= 114}
+            className="w-11 h-11 rounded-full text-white/80 hover:bg-white/10 disabled:opacity-40 flex items-center justify-center"
           >
             <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
               <path d="M16 6h2v12h-2zM15 12L4 19V5z" />

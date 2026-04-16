@@ -379,6 +379,14 @@ export function useTotalAyahs(): number {
   return store.getRecitation().length;
 }
 
+/** Read-only access to the current surah's recitation rows. Not subscribed —
+ *  relies on the caller also calling usePlayerState() so it re-renders when
+ *  the surah changes. */
+export function useRecitationArray(): RecitationAyah[] {
+  const { store } = useCtx();
+  return store.getRecitation();
+}
+
 export function usePlayerActions() {
   const { store, audioRef } = useCtx();
 
@@ -514,10 +522,37 @@ export function usePlayerActions() {
     store.setAutoScroll(true);
   }, [store]);
 
+  /** Seek to a position in the full-surah timeline (ms). Locates the ayah
+   *  that contains `ms`, swaps audio.src, and seeks within that ayah. */
+  const seekInSurah = useCallback(
+    (ms: number) => {
+      const rec = store.getRecitation();
+      if (rec.length === 0) return;
+      let acc = 0;
+      let idx = 0;
+      for (let i = 0; i < rec.length; i++) {
+        if (ms < acc + rec[i].duration_ms) { idx = i; break; }
+        acc += rec[i].duration_ms;
+        idx = i;
+      }
+      const offset = Math.max(0, ms - acc);
+      const s = store.getState();
+      store.setAyahIndex(idx);
+      const audio = audioRef.current;
+      if (audio) {
+        audio.src = rec[idx].audio_url;
+        audio.currentTime = offset / 1000;
+        if (s.status === "playing") audio.play().catch(() => store.setStatus("error"));
+      }
+    },
+    [store, audioRef],
+  );
+
   return {
     play,
     pause,
     seek,
+    seekInSurah,
     nextAyah,
     prevAyah,
     setReciter,
