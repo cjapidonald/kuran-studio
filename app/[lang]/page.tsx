@@ -110,14 +110,15 @@ export default async function LandingPage({ params }: PageProps) {
       {/* Nav */}
       <nav className="relative z-50 flex items-center justify-between px-6 py-4 max-w-6xl mx-auto">
         <Link href={`/${lang}`} className="flex items-center gap-2">
-          <span className="w-7 h-7 bg-emerald-500 rounded-md flex items-center justify-center text-xs text-gray-950 font-black">Q</span>
-          <span className="font-bold text-white">Kuran<span className="text-emerald-400">.</span></span>
+          <span className="w-8 h-8 bg-emerald-500 rounded-md flex items-center justify-center text-sm text-gray-950 font-black">Q</span>
+          <span className="font-bold text-white text-base">Kuran<span className="text-emerald-400">.</span></span>
         </Link>
-        <div className="flex items-center gap-2">
-          <a href={`/${lang}#features`} className="text-xs text-gray-400 hover:text-white transition hidden sm:inline mr-2">{dict["nav.features"]}</a>
-          <Link href={`/${lang}/blog`} className="text-xs text-gray-400 hover:text-white transition hidden sm:inline mr-2">{dict["nav.blog"]}</Link>
+        <div className="flex items-center gap-3">
+          <Link href={`/${lang}`} className="text-sm px-4 py-2 rounded-md text-gray-300 hover:text-white hover:bg-white/5 transition hidden sm:inline">{dict["nav.home"] || "Home"}</Link>
+          <a href={`/${lang}#features`} className="text-sm px-4 py-2 rounded-md text-gray-300 hover:text-white hover:bg-white/5 transition hidden sm:inline">{dict["nav.features"]}</a>
+          <Link href={`/${lang}/blog`} className="text-sm px-4 py-2 rounded-md text-gray-300 hover:text-white hover:bg-white/5 transition hidden sm:inline">{dict["nav.blog"]}</Link>
           <LanguageSelector currentLang={lang} />
-          <Link href={`/${lang}/login`} className="text-xs px-4 py-1.5 rounded-md bg-white/5 hover:bg-white/10 text-gray-300 transition">
+          <Link href={`/${lang}/login`} className="text-sm px-5 py-2 rounded-md bg-emerald-500 hover:bg-emerald-400 text-black font-semibold transition shadow-md shadow-emerald-500/20">
             {dict["nav.login"]}
           </Link>
         </div>
@@ -126,16 +127,18 @@ export default async function LandingPage({ params }: PageProps) {
       {/* Hero */}
       <section className="relative py-16 px-6">
         <div className="absolute inset-0 flex items-center justify-center pointer-events-none overflow-hidden">
-          <FlickeringGrid className="relative inset-0 z-0 [mask-image:radial-gradient(500px_circle_at_center,white,transparent)]" squareSize={4} gridGap={6} color="#6B7280" maxOpacity={0.5} flickerChance={0.1} />
+          <FlickeringGrid className="relative inset-0 z-0 [mask-image:radial-gradient(500px_circle_at_center,white,transparent)]" squareSize={4} gridGap={6} color="#10B981" maxOpacity={0.5} flickerChance={0.1} />
         </div>
         <div className="absolute top-20 left-1/2 -translate-x-1/2 w-[600px] h-[400px] bg-emerald-500/5 blur-[120px] rounded-full" />
 
         <div className="relative max-w-6xl mx-auto grid md:grid-cols-2 gap-10 md:gap-14 items-center">
           {/* Left: text + CTAs */}
           <div className="text-left">
-            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-gray-800 bg-gray-900/50 text-xs text-gray-400 mb-6">
-              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-              {dict["landing.badge"]}
+            <div className="flex justify-center mb-6">
+              <span className="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-gray-800 bg-gray-900/50 text-xs text-gray-400">
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                {dict["landing.badge"]}
+              </span>
             </div>
 
             <h1 className="text-5xl md:text-6xl lg:text-7xl font-black tracking-tight leading-[0.95]">
@@ -183,7 +186,7 @@ export default async function LandingPage({ params }: PageProps) {
       {/* Browser Mockup */}
       <section className="px-6 pb-20 max-w-5xl mx-auto relative overflow-hidden">
         <div className="absolute inset-0 flex items-center justify-center pointer-events-none overflow-hidden">
-          <FlickeringGrid className="relative inset-0 z-0 [mask-image:radial-gradient(450px_circle_at_center,white,transparent)]" squareSize={4} gridGap={6} color="#10B981" maxOpacity={0.5} flickerChance={0.1} />
+          <FlickeringGrid className="relative inset-0 z-0 [mask-image:radial-gradient(450px_circle_at_center,white,transparent)]" squareSize={4} gridGap={6} color="#A855F7" maxOpacity={0.5} flickerChance={0.1} />
         </div>
         <div className="absolute -top-10 left-1/2 -translate-x-1/2 w-[500px] h-[300px] bg-emerald-500/5 blur-[100px] rounded-full" />
         <FadeIn>
