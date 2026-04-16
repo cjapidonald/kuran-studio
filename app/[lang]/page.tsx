@@ -56,8 +56,46 @@ export default async function LandingPage({ params }: PageProps) {
   const { lang } = await params;
   const dict = await getDictionary(lang);
 
+  const websiteJsonLd = {
+    "@context": "https://schema.org",
+    "@type": "WebSite",
+    "@id": "https://kuran.studio#website",
+    name: dict["site.name"] || "Kuran.studio",
+    alternateName: "Kuran Studio",
+    url: `https://kuran.studio/${lang}`,
+    inLanguage: lang,
+    description: dict["site.description"],
+    publisher: { "@id": "https://kuran.studio#organization" },
+    potentialAction: {
+      "@type": "SearchAction",
+      target: {
+        "@type": "EntryPoint",
+        urlTemplate: `https://kuran.studio/${lang}/{search_term_string}`,
+      },
+      "query-input": "required name=search_term_string",
+    },
+  };
+
+  const organizationJsonLd = {
+    "@context": "https://schema.org",
+    "@type": "Organization",
+    "@id": "https://kuran.studio#organization",
+    name: "Kuran.studio",
+    url: "https://kuran.studio",
+    logo: "https://kuran.studio/icon.png",
+    sameAs: ["https://github.com/cjapidonald/kuran-studio"],
+  };
+
   return (
     <div className="min-h-screen bg-gray-950 text-white overflow-hidden">
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(websiteJsonLd) }}
+      />
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(organizationJsonLd) }}
+      />
       {/* Nav */}
       <nav className="relative z-50 flex items-center justify-between px-6 py-4 max-w-6xl mx-auto">
         <Link href={`/${lang}`} className="flex items-center gap-2">

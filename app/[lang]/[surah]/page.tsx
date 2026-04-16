@@ -2,6 +2,7 @@ import { notFound } from "next/navigation";
 import Link from "next/link";
 import { fetchSurah } from "@/lib/quran/api";
 import { SURAHS } from "@/lib/quran/surahs";
+import { getSurahDescription } from "@/lib/quran/descriptions";
 import { LANGUAGES, SUPPORTED_LOCALES } from "@/lib/i18n/languages";
 import { getDictionary } from "@/lib/i18n/get-dictionary";
 import { AyahDisplay } from "@/components/reader/ayah-display";
@@ -37,18 +38,36 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   const surahName = dict[`surah.${meta.number}`] || meta.transliteration;
   const title = `${meta.transliteration} - ${surahName}`;
 
+  // Unique description per surah (from Supabase), falls back to template
+  const uniqueDesc = await getSurahDescription(lang, surahNum);
+  const description =
+    uniqueDesc ||
+    `${meta.transliteration} (${meta.name}) - ${surahName}. ${meta.ayahCount} ${dict["reader.ayahs"]}.`;
+
+  const url = `https://kuran.studio/${lang}/${surahNum}`;
+  const ogTitle = `${meta.transliteration} - ${surahName} | Kuran.studio`;
+
   return {
     title,
-    description: `${meta.transliteration} (${meta.name}) - ${surahName}. ${meta.ayahCount} ${dict["reader.ayahs"]}.`,
+    description,
     alternates: {
-      canonical: `https://kuran.studio/${lang}/${surahNum}`,
+      canonical: url,
       languages: Object.fromEntries(
         SUPPORTED_LOCALES.map((l) => [l, `https://kuran.studio/${l}/${surahNum}`])
       ),
     },
     openGraph: {
-      title: `${meta.transliteration} - ${surahName} | Kuran.studio`,
+      title: ogTitle,
+      description,
+      url,
+      siteName: "Kuran.studio",
       locale: lang,
+      type: "article",
+    },
+    twitter: {
+      card: "summary_large_image",
+      title: ogTitle,
+      description,
     },
   };
 }
@@ -75,7 +94,7 @@ export default async function SurahPage({ params }: PageProps) {
   const surahName = dict[`surah.${meta.number}`] || meta.transliteration;
   const revelationLabel = meta.revelationType === "meccan" ? dict["reader.meccan"] : dict["reader.medinan"];
 
-  const jsonLd = {
+  const chapterJsonLd = {
     "@context": "https://schema.org",
     "@type": "Chapter",
     name: meta.transliteration,
@@ -84,17 +103,33 @@ export default async function SurahPage({ params }: PageProps) {
     inLanguage: lang,
     isPartOf: {
       "@type": "Book",
+      "@id": "https://kuran.studio#the-quran",
       name: "The Quran",
       alternateName: "القرآن الكريم",
+      inLanguage: "ar",
     },
     url: `https://kuran.studio/${lang}/${surahNum}`,
+  };
+
+  const breadcrumbJsonLd = {
+    "@context": "https://schema.org",
+    "@type": "BreadcrumbList",
+    itemListElement: [
+      { "@type": "ListItem", position: 1, name: dict["site.name"] || "Kuran.studio", item: `https://kuran.studio/${lang}` },
+      { "@type": "ListItem", position: 2, name: dict["reader.title"] || "Quran", item: `https://kuran.studio/${lang}` },
+      { "@type": "ListItem", position: 3, name: `${meta.transliteration} - ${surahName}`, item: `https://kuran.studio/${lang}/${surahNum}` },
+    ],
   };
 
   return (
     <div className="min-h-screen bg-gray-950 text-gray-200">
       <script
         type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(chapterJsonLd) }}
+      />
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbJsonLd) }}
       />
       {/* Header bar */}
       <nav className="sticky top-0 z-50 bg-gray-950/80 backdrop-blur-md border-b border-white/5">

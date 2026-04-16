@@ -35,10 +35,26 @@ export async function generateMetadata({ params }: { params: Promise<{ lang: str
     openGraph: {
       type: "website",
       locale: lang,
+      alternateLocale: SUPPORTED_LOCALES.filter((l) => l !== lang),
       url: `https://kuran.studio/${lang}`,
       siteName: dict["site.name"],
       title: `${dict["site.name"]} — ${dict["site.tagline"]}`,
       description: dict["site.description.meta"],
+    },
+    twitter: {
+      card: "summary_large_image",
+      title: `${dict["site.name"]} — ${dict["site.tagline"]}`,
+      description: dict["site.description.meta"],
+    },
+    robots: {
+      index: true,
+      follow: true,
+      googleBot: {
+        index: true,
+        follow: true,
+        "max-image-preview": "large",
+        "max-snippet": -1,
+      },
     },
   };
 }
