@@ -52,17 +52,16 @@ export const LANGUAGES: Record<string, Language> = {
   prs: { code: "prs", name: "دری", nameEn: "Dari", dir: "rtl", translationKey: "dari_badkhashani" },
 
   // South Asian
-  hi: { code: "hi", name: "हिन्दी", nameEn: "Hindi", dir: "ltr", translationKey: "hindi_azizul_haq" },
-  bn: { code: "bn", name: "বাংলা", nameEn: "Bengali", dir: "ltr", translationKey: "bengali_abu_bakr" },
-  ta: { code: "ta", name: "தமிழ்", nameEn: "Tamil", dir: "ltr", translationKey: "tamil_omar_sharif" },
-  te: { code: "te", name: "తెలుగు", nameEn: "Telugu", dir: "ltr", translationKey: "telugu_abdurrahim" },
-  gu: { code: "gu", name: "ગુજરાતી", nameEn: "Gujarati", dir: "ltr", translationKey: "gujarati_rabella" },
-  ml: { code: "ml", name: "മലയാളം", nameEn: "Malayalam", dir: "ltr", translationKey: "malayalam_abdul_hamid" },
-  kn: { code: "kn", name: "ಕನ್ನಡ", nameEn: "Kannada", dir: "ltr", translationKey: "kannada_hamza_butur" },
+  hi: { code: "hi", name: "हिन्दी", nameEn: "Hindi", dir: "ltr", translationKey: "hindi_omari" },
+  ta: { code: "ta", name: "தமிழ்", nameEn: "Tamil", dir: "ltr", translationKey: "tamil_omar", alternateKeys: ["tamil_baqavi"] },
+  te: { code: "te", name: "తెలుగు", nameEn: "Telugu", dir: "ltr", translationKey: "telugu_muhammad" },
+  gu: { code: "gu", name: "ગુજરાતી", nameEn: "Gujarati", dir: "ltr", translationKey: "gujarati_omari" },
+  ml: { code: "ml", name: "മലയാളം", nameEn: "Malayalam", dir: "ltr", translationKey: "malayalam_kunhi" },
+  kn: { code: "kn", name: "ಕನ್ನಡ", nameEn: "Kannada", dir: "ltr", translationKey: "kannada_hamza" },
   as: { code: "as", name: "অসমীয়া", nameEn: "Assamese", dir: "ltr", translationKey: "assamese_rafeeq" },
-  pa: { code: "pa", name: "ਪੰਜਾਬੀ", nameEn: "Punjabi", dir: "ltr", translationKey: "punjabi_arif_haleem" },
+  pa: { code: "pa", name: "ਪੰਜਾਬੀ", nameEn: "Punjabi", dir: "ltr", translationKey: "punjabi_arif" },
   si: { code: "si", name: "සිංහල", nameEn: "Sinhalese", dir: "ltr", translationKey: "sinhalese_mahir" },
-  ne: { code: "ne", name: "नेपाली", nameEn: "Nepali", dir: "ltr", translationKey: "nepali_ahlul_hadith" },
+  // bn (Bengali) and ne (Nepali) not available on QuranEnc — dropped for now
 
   // East Asian
   zh: { code: "zh", name: "中文", nameEn: "Chinese", dir: "ltr", translationKey: "chinese_suliman", alternateKeys: ["chinese_makin"] },
@@ -91,17 +90,16 @@ export const LANGUAGES: Record<string, Language> = {
   sw: { code: "sw", name: "Kiswahili", nameEn: "Swahili", dir: "ltr", translationKey: "swahili_rwwad", alternateKeys: ["swahili_barwani"] },
   so: { code: "so", name: "Soomaali", nameEn: "Somali", dir: "ltr", translationKey: "somali_yacob" },
   am: { code: "am", name: "አማርኛ", nameEn: "Amharic", dir: "ltr", translationKey: "amharic_sadiq" },
-  yo: { code: "yo", name: "Yorùbá", nameEn: "Yoruba", dir: "ltr", translationKey: "yoruba_mikael" },
+  yo: { code: "yo", name: "Yorùbá", nameEn: "Yoruba", dir: "ltr", translationKey: "yoruba_mikail" },
   om: { code: "om", name: "Oromoo", nameEn: "Oromo", dir: "ltr", translationKey: "oromo_ababor" },
   mg: { code: "mg", name: "Malagasy", nameEn: "Malagasy", dir: "ltr", translationKey: "malagasy_rwwad" },
-  ny: { code: "ny", name: "Chichewa", nameEn: "Chichewa", dir: "ltr", translationKey: "chichewa_batyala" },
+  // ny (Chichewa) and dag (Dagbani) not available on QuranEnc — dropped
   mos: { code: "mos", name: "Mooré", nameEn: "Mossi", dir: "ltr", translationKey: "moore_rwwad" },
   ff: { code: "ff", name: "Fulfulde", nameEn: "Fulani", dir: "ltr", translationKey: "fulani_rwwad" },
-  ln: { code: "ln", name: "Lingála", nameEn: "Lingala", dir: "ltr", translationKey: "lingala_balangogo" },
-  ak: { code: "ak", name: "Akan", nameEn: "Akan", dir: "ltr", translationKey: "akan_ismail" },
-  rw: { code: "rw", name: "Kinyarwanda", nameEn: "Kinyarwanda", dir: "ltr", translationKey: "kinyarwanda_association" },
-  rn: { code: "rn", name: "Kirundi", nameEn: "Kirundi", dir: "ltr", translationKey: "kirundi_gahiti" },
-  dag: { code: "dag", name: "Dagbani", nameEn: "Dagbani", dir: "ltr", translationKey: "dagbani_ghutubo" },
+  ln: { code: "ln", name: "Lingála", nameEn: "Lingala", dir: "ltr", translationKey: "lingala_zakaria" },
+  ak: { code: "ak", name: "Akan", nameEn: "Akan", dir: "ltr", translationKey: "asante_harun" },
+  rw: { code: "rw", name: "Kinyarwanda", nameEn: "Kinyarwanda", dir: "ltr", translationKey: "kinyarwanda_assoc" },
+  rn: { code: "rn", name: "Kirundi", nameEn: "Kirundi", dir: "ltr", translationKey: "ikirundi_gehiti" },
   aa: { code: "aa", name: "Afar", nameEn: "Afar", dir: "ltr", translationKey: "afar_hamza" },
 };
 

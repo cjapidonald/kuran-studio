@@ -31,7 +31,7 @@ const TRANSLATIONS: TranslationConfig[] = [
   { key: "albanian_rwwad", languageCode: "sq", languageName: "Shqip", translator: "Rowwad Translation Center", isPrimary: false },
   { key: "bosnian_rwwad", languageCode: "bs", languageName: "Bosanski", translator: "Rowwad Translation Center", isPrimary: true },
   { key: "bosnian_korkut", languageCode: "bs", languageName: "Bosanski", translator: "Besim Korkut", isPrimary: false },
-  { key: "bosnian_mahanovic", languageCode: "bs", languageName: "Bosanski", translator: "Mihanovic", isPrimary: false },
+  { key: "bosnian_mihanovich", languageCode: "bs", languageName: "Bosanski", translator: "Mihanovic", isPrimary: false },
   { key: "croatian_rwwad", languageCode: "hr", languageName: "Hrvatski", translator: "Rowwad Translation Center", isPrimary: true },
   { key: "serbian_rwwad", languageCode: "sr", languageName: "Српски", translator: "Rowwad Translation Center", isPrimary: true },
   { key: "macedonian_group", languageCode: "mk", languageName: "Македонски", translator: "Group of Scholars", isPrimary: true },
@@ -88,17 +88,18 @@ const TRANSLATIONS: TranslationConfig[] = [
   { key: "dari_badkhashani", languageCode: "prs", languageName: "دری", translator: "Badakhshani", isPrimary: true },
 
   // South Asian
-  { key: "hindi_azizul_haq", languageCode: "hi", languageName: "हिन्दी", translator: "Azizul Haq", isPrimary: true },
-  { key: "bengali_abu_bakr", languageCode: "bn", languageName: "বাংলা", translator: "Abu Bakr Zakaria", isPrimary: true },
-  { key: "tamil_omar_sharif", languageCode: "ta", languageName: "தமிழ்", translator: "Omar Sharif", isPrimary: true },
-  { key: "telugu_abdurrahim", languageCode: "te", languageName: "తెలుగు", translator: "Abdur-Rahim ibn Muhammad", isPrimary: true },
-  { key: "gujarati_rabella", languageCode: "gu", languageName: "ગુજરાતી", translator: "Rabella", isPrimary: true },
-  { key: "malayalam_abdul_hamid", languageCode: "ml", languageName: "മലയാളം", translator: "Abdul Hamid & Kunhi Mohammed", isPrimary: true },
-  { key: "kannada_hamza_butur", languageCode: "kn", languageName: "ಕನ್ನಡ", translator: "Hamza Butur", isPrimary: true },
+  { key: "hindi_omari", languageCode: "hi", languageName: "हिन्दी", translator: "Azizul Haq Al-Omari", isPrimary: true },
+  { key: "tamil_omar", languageCode: "ta", languageName: "தமிழ்", translator: "Omar Sharif", isPrimary: true },
+  { key: "tamil_baqavi", languageCode: "ta", languageName: "தமிழ்", translator: "Abdulhamid Baqawi", isPrimary: false },
+  { key: "telugu_muhammad", languageCode: "te", languageName: "తెలుగు", translator: "Abdur-Rahim ibn Muhammad", isPrimary: true },
+  { key: "gujarati_omari", languageCode: "gu", languageName: "ગુજરાતી", translator: "Rabella Al-Omari", isPrimary: true },
+  { key: "malayalam_kunhi", languageCode: "ml", languageName: "മലയാളം", translator: "Abdul Hamid & Kunhi Mohammed", isPrimary: true },
+  { key: "kannada_hamza", languageCode: "kn", languageName: "ಕನ್ನಡ", translator: "Hamza Butur", isPrimary: true },
   { key: "assamese_rafeeq", languageCode: "as", languageName: "অসমীয়া", translator: "Rafeeq-ul-Islam", isPrimary: true },
-  { key: "punjabi_arif_haleem", languageCode: "pa", languageName: "ਪੰਜਾਬੀ", translator: "Arif Haleem", isPrimary: true },
+  { key: "punjabi_arif", languageCode: "pa", languageName: "ਪੰਜਾਬੀ", translator: "Arif Haleem", isPrimary: true },
   { key: "sinhalese_mahir", languageCode: "si", languageName: "සිංහල", translator: "Mahir", isPrimary: true },
-  { key: "nepali_ahlul_hadith", languageCode: "ne", languageName: "नेपाली", translator: "Ahlul Hadith Central Committee", isPrimary: true },
+  // bengali_abu_bakr — not available on QuranEnc, dropped
+  // nepali_ahlul_hadith — not available on QuranEnc, dropped
 
   // East Asian
   { key: "chinese_suliman", languageCode: "zh", languageName: "中文", translator: "Ma Suliman", isPrimary: true },
@@ -134,18 +135,19 @@ const TRANSLATIONS: TranslationConfig[] = [
   { key: "swahili_barwani", languageCode: "sw", languageName: "Kiswahili", translator: "Ali Muhsin Al-Barwani", isPrimary: false },
   { key: "somali_yacob", languageCode: "so", languageName: "Soomaali", translator: "Yacob", isPrimary: true },
   { key: "amharic_sadiq", languageCode: "am", languageName: "አማርኛ", translator: "Sadiq & Sani", isPrimary: true },
-  { key: "yoruba_mikael", languageCode: "yo", languageName: "Yorùbá", translator: "Mikael", isPrimary: true },
+  { key: "yoruba_mikail", languageCode: "yo", languageName: "Yorùbá", translator: "Mikail Aykanni", isPrimary: true },
   { key: "oromo_ababor", languageCode: "om", languageName: "Oromoo", translator: "Ghali Apapur Apapur", isPrimary: true },
   { key: "malagasy_rwwad", languageCode: "mg", languageName: "Malagasy", translator: "Rowwad Translation Center", isPrimary: true },
-  { key: "chichewa_batyala", languageCode: "ny", languageName: "Chichewa", translator: "Batyala", isPrimary: true },
+  // chichewa_batyala — not available on QuranEnc, dropped
   { key: "moore_rwwad", languageCode: "mos", languageName: "Mooré", translator: "Rowwad Translation Center", isPrimary: true },
   { key: "fulani_rwwad", languageCode: "ff", languageName: "Fulfulde", translator: "Rowwad Translation Center", isPrimary: true },
-  { key: "lingala_balangogo", languageCode: "ln", languageName: "Lingála", translator: "Balangogo", isPrimary: true },
-  { key: "akan_ismail", languageCode: "ak", languageName: "Akan", translator: "Ismail", isPrimary: true },
-  { key: "kinyarwanda_association", languageCode: "rw", languageName: "Kinyarwanda", translator: "Rwanda Muslim Association", isPrimary: true },
-  { key: "kirundi_gahiti", languageCode: "rn", languageName: "Kirundi", translator: "Gahiti", isPrimary: true },
-  { key: "dagbani_ghutubo", languageCode: "dag", languageName: "Dagbani", translator: "Ghutubo", isPrimary: true },
+  { key: "lingala_zakaria", languageCode: "ln", languageName: "Lingála", translator: "Zakaria Muhammad Balengo", isPrimary: true },
+  { key: "asante_harun", languageCode: "ak", languageName: "Akan (Asante)", translator: "Harun Ismail", isPrimary: true },
+  { key: "kinyarwanda_assoc", languageCode: "rw", languageName: "Kinyarwanda", translator: "Rwanda Muslim Association", isPrimary: true },
+  { key: "ikirundi_gehiti", languageCode: "rn", languageName: "Kirundi", translator: "Yusuf Gahiti", isPrimary: true },
+  // dagbani_ghutubo — not available on QuranEnc, dropped
   { key: "afar_hamza", languageCode: "aa", languageName: "Afar", translator: "Hamza", isPrimary: true },
+  { key: "amharic_zain", languageCode: "am", languageName: "አማርኛ", translator: "Africa Academy (Zain)", isPrimary: false },
 ];
 
 // ---- Helpers ----
