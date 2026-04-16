@@ -137,11 +137,11 @@ interface ReciterSeed {
 }
 
 const RECITERS: ReciterSeed[] = [
-  { slug: "alafasy",              display_name: "Mishary Rashid Al-Afasy",  style: "murattal", match: { name_contains: "Afasy",   style: "murattal" }, sort_order: 10, is_default: true },
-  { slug: "abdul_basit_mujawwad", display_name: "Abdul Basit Abd us-Samad", style: "mujawwad", match: { name_contains: "Basit",   style: "mujawwad" }, sort_order: 20, is_default: false },
-  { slug: "maher_al_muaiqly",     display_name: "Maher Al-Muaiqly",         style: "murattal", match: { name_contains: "Muaiqly", style: "murattal" }, sort_order: 30, is_default: false },
-  { slug: "sudais",               display_name: "Abdur-Rahman As-Sudais",   style: "murattal", match: { name_contains: "Sudais",  style: "murattal" }, sort_order: 40, is_default: false },
-  { slug: "husary",               display_name: "Mahmoud Khalil Al-Husary", style: "murattal", match: { name_contains: "Husary",  style: "murattal" }, sort_order: 50, is_default: false },
+  { slug: "alafasy",              display_name: "Mishary Rashid Al-Afasy",  style: "murattal", match: { name_contains: "Mishari",    style: "murattal" }, sort_order: 10, is_default: true },
+  { slug: "abdul_basit_mujawwad", display_name: "Abdul Basit Abd us-Samad", style: "mujawwad", match: { name_contains: "AbdulBaset", style: "mujawwad" }, sort_order: 20, is_default: false },
+  { slug: "minshawi_murattal",    display_name: "Mohamed Siddiq al-Minshawi", style: "murattal", match: { name_contains: "Minshawi", style: "murattal" }, sort_order: 30, is_default: false },
+  { slug: "sudais",               display_name: "Abdur-Rahman As-Sudais",   style: "murattal", match: { name_contains: "Sudais",    style: "murattal" }, sort_order: 40, is_default: false },
+  { slug: "husary",               display_name: "Mahmoud Khalil Al-Husary", style: "murattal", match: { name_contains: "Al-Husary", style: "murattal" }, sort_order: 50, is_default: false },
 ];
 
 async function main() {
@@ -207,18 +207,19 @@ async function fetchJson<T>(url: string, tries = 3): Promise<T> {
 
 async function resolveReciterIds(): Promise<Map<string, number>> {
   const data = await fetchJson<{ recitations: QuranComRecitation[] }>(
-    `${QURAN_COM_API}/recitations`,
+    `${QURAN_COM_API}/resources/recitations`,
   );
   const resolved = new Map<string, number>();
   for (const r of RECITERS) {
     const matches = data.recitations.filter((q) => {
       const nameMatch = q.reciter_name.toLowerCase().includes(r.match.name_contains.toLowerCase());
       const qStyle = (q.style || "").toLowerCase();
-      // "murattal" is the default style; Quran.com often leaves it empty or says "Murattal"
+      // Quran.com reports style as null/"" for the default murattal style, and explicit
+      // strings like "Mujawwad" or "Muallim" for other styles.
       const styleMatch =
         r.match.style === "mujawwad"
           ? qStyle.includes("mujawwad")
-          : !qStyle.includes("mujawwad");
+          : qStyle === "" || qStyle === "murattal";
       return nameMatch && styleMatch;
     });
     if (matches.length === 0) {
@@ -333,8 +334,8 @@ Add below `seedReciters`:
 ```ts
 interface QuranComAudioFile {
   verse_key: string;        // "2:43"
-  url: string;              // may be relative (verses/...) or absolute
-  segments: number[][];     // [[word_idx, start_ms, end_ms, ...], ...]
+  url: string;              // relative, e.g. "Alafasy/mp3/002043.mp3"
+  segments: number[][];     // [[segment_idx, word_number_1based, start_ms, end_ms], ...]
 }
 
 function absolutizeAudioUrl(url: string): string {
@@ -343,20 +344,23 @@ function absolutizeAudioUrl(url: string): string {
   return `https://verses.quran.com/${url.replace(/^\/+/, "")}`;
 }
 
+// Quran.com segments are 4-tuples: [segment_index, word_number_1based, start_ms, end_ms].
+// We normalize to [word_index_0based, start_ms, end_ms] for a simpler runtime model.
 function normalizeSegments(raw: number[][]): [number, number, number][] {
   const out: [number, number, number][] = [];
   for (const s of raw) {
-    if (!Array.isArray(s) || s.length < 3) continue;
-    const wi = Math.max(0, Math.floor(s[0]));
-    const start = Math.max(0, Math.floor(s[1]));
-    const end = Math.max(start, Math.floor(s[2]));
-    out.push([wi, start, end]);
+    if (!Array.isArray(s) || s.length < 4) continue;
+    const word0 = Math.max(0, Math.floor(s[1] - 1));
+    const start = Math.max(0, Math.floor(s[2]));
+    const end = Math.max(start, Math.floor(s[3]));
+    out.push([word0, start, end]);
   }
   return out;
 }
 
 async function seedOneSurah(slug: string, quranComId: number, surah: number) {
-  const url = `${QURAN_COM_API}/recitations/${quranComId}/by_chapter/${surah}`;
+  // `fields=segments` is required — without it Quran.com omits the word-timing array.
+  const url = `${QURAN_COM_API}/recitations/${quranComId}/by_chapter/${surah}?fields=segments&per_page=300`;
   const data = await fetchJson<{ audio_files: QuranComAudioFile[] }>(url);
   if (!data.audio_files || data.audio_files.length === 0) {
     throw new Error(`No audio_files for ${slug} surah ${surah}`);

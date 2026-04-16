@@ -12,7 +12,7 @@ const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_KEY, {
   auth: { persistSession: false },
 });
 
-const QURAN_COM_API = "https://api.quran.com/api/v4/resources";
+const QURAN_COM_API = "https://api.quran.com/api/v4";
 
 interface ReciterSeed {
   slug: string;
@@ -55,7 +55,7 @@ async function fetchJson<T>(url: string, tries = 3): Promise<T> {
 
 async function resolveReciterIds(): Promise<Map<string, number>> {
   const data = await fetchJson<{ recitations: QuranComRecitation[] }>(
-    `${QURAN_COM_API}/recitations`,
+    `${QURAN_COM_API}/resources/recitations`,
   );
   const resolved = new Map<string, number>();
   for (const r of RECITERS) {
