@@ -43,6 +43,7 @@ export const LANGUAGES: Record<string, Language> = {
   be: { code: "be", name: "Беларуская", nameEn: "Belarusian", dir: "ltr", translationKey: "belarusian_krivtsov" },
 
   // Middle Eastern
+  ar: { code: "ar", name: "العربية", nameEn: "Arabic", dir: "rtl", translationKey: "arabic_source" },
   fa: { code: "fa", name: "فارسی", nameEn: "Persian", dir: "rtl", translationKey: "persian_ih" },
   ur: { code: "ur", name: "اردو", nameEn: "Urdu", dir: "rtl", translationKey: "urdu_junagarhi" },
   ps: { code: "ps", name: "پښتو", nameEn: "Pashto", dir: "rtl", translationKey: "pashto_rwwad", alternateKeys: ["pashto_zakaria"] },
