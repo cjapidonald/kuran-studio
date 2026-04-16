@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "motion/react";
 import {
   usePlayerActions,
@@ -9,6 +9,9 @@ import {
   useTotalAyahs,
 } from "./recitation-provider";
 import { SURAHS } from "@/lib/quran/surahs";
+import { fetchSurah, type Ayah, type TranslationOption } from "@/lib/quran/api";
+
+const ARABIC_KEY = "arabic_source";
 
 function formatMs(ms: number) {
   const total = Math.max(0, Math.floor(ms / 1000));
@@ -20,14 +23,52 @@ function formatMs(ms: number) {
 export function ReciterPlayer({
   defaultExpanded = false,
   showSurahControls = false,
+  translations,
+  initialAyahs,
+  initialTranslationKey = ARABIC_KEY,
 }: {
   defaultExpanded?: boolean;
   showSurahControls?: boolean;
+  translations?: TranslationOption[];
+  initialAyahs?: Ayah[];
+  initialTranslationKey?: string;
 } = {}) {
   const [expanded, setExpanded] = useState(defaultExpanded);
+  const [fullscreen, setFullscreen] = useState(false);
   const state = usePlayerState();
   const actions = usePlayerActions();
   const isPlaying = state.status === "playing";
+
+  // Ayah text (Arabic or a chosen translation). Keeps itself in sync with
+  // the current surah + translation key.
+  const [translationKey, setTranslationKey] = useState<string>(initialTranslationKey);
+  const [ayahs, setAyahs] = useState<Ayah[]>(initialAyahs ?? []);
+  const [textLoading, setTextLoading] = useState(false);
+
+  useEffect(() => {
+    if (!showSurahControls) return;
+    let cancelled = false;
+    setTextLoading(true);
+    fetchSurah(translationKey, state.surah)
+      .then((data) => {
+        if (!cancelled) setAyahs(data);
+      })
+      .catch(() => {
+        if (!cancelled) setAyahs([]);
+      })
+      .finally(() => {
+        if (!cancelled) setTextLoading(false);
+      });
+    return () => { cancelled = true; };
+  }, [translationKey, state.surah, showSurahControls]);
+
+  const displayMode: "arabic" | "translation" = translationKey === ARABIC_KEY ? "arabic" : "translation";
+  const currentAyah = ayahs[state.ayahIndex];
+  const displayText = currentAyah
+    ? displayMode === "arabic"
+      ? currentAyah.arabic_text
+      : currentAyah.translation
+    : "";
 
   return (
     <div className="relative">
@@ -88,9 +129,28 @@ export function ReciterPlayer({
             actions={actions}
             onClose={() => setExpanded(false)}
             showSurahControls={showSurahControls}
+            translations={translations}
+            translationKey={translationKey}
+            onTranslationChange={setTranslationKey}
+            displayText={displayText}
+            displayMode={displayMode}
+            textLoading={textLoading}
+            onFullscreen={() => setFullscreen(true)}
           />
         )}
       </AnimatePresence>
+      {fullscreen && showSurahControls && (
+        <FullscreenPanel
+          state={state}
+          actions={actions}
+          translations={translations}
+          translationKey={translationKey}
+          onTranslationChange={setTranslationKey}
+          displayText={displayText}
+          displayMode={displayMode}
+          onClose={() => setFullscreen(false)}
+        />
+      )}
     </div>
   );
 }
@@ -100,11 +160,25 @@ function ExpandedPanel({
   actions,
   onClose,
   showSurahControls,
+  translations,
+  translationKey,
+  onTranslationChange,
+  displayText,
+  displayMode,
+  textLoading,
+  onFullscreen,
 }: {
   state: ReturnType<typeof usePlayerState>;
   actions: ReturnType<typeof usePlayerActions>;
   onClose: () => void;
   showSurahControls: boolean;
+  translations?: TranslationOption[];
+  translationKey: string;
+  onTranslationChange: (key: string) => void;
+  displayText: string;
+  displayMode: "arabic" | "translation";
+  textLoading: boolean;
+  onFullscreen: () => void;
 }) {
   const reciters = useReciterList();
   const totalAyahs = useTotalAyahs();
@@ -140,7 +214,7 @@ function ExpandedPanel({
       animate={{ opacity: 1, scale: 1 }}
       exit={{ opacity: 0, scale: 0.96 }}
       transition={{ type: "spring", stiffness: 240, damping: 28 }}
-      className={`${showSurahControls ? "w-[400px]" : "w-[300px]"} p-3 rounded-2xl
+      className={`${showSurahControls ? "w-[520px]" : "w-[300px]"} p-4 rounded-2xl
                  bg-white/5 backdrop-blur-xl backdrop-saturate-150
                  border border-white/10 text-white/90
                  bg-[radial-gradient(circle_at_30%_0%,rgba(16,185,129,0.2),transparent_60%)]
@@ -186,6 +260,22 @@ function ExpandedPanel({
           <span>{formatMs(state.durationMs)}</span>
         </div>
       </div>
+
+      {showSurahControls && (
+        <div className="mt-3 px-3 py-4 rounded-xl bg-black/30 border border-white/5 min-h-[88px] flex items-center justify-center">
+          {textLoading && !displayText ? (
+            <span className="text-[11px] text-white/40 font-mono">Loading…</span>
+          ) : displayMode === "arabic" ? (
+            <p dir="rtl" className="text-right font-serif text-white/95 leading-[2] text-[1.5rem]">
+              {displayText || "—"}
+            </p>
+          ) : (
+            <p dir="auto" className="text-left text-white/90 leading-relaxed text-sm">
+              {displayText || "—"}
+            </p>
+          )}
+        </div>
+      )}
 
       <div className="mt-3 flex items-center justify-between">
         <div className="flex items-center gap-1">
@@ -257,13 +347,26 @@ function ExpandedPanel({
           )}
         </div>
 
-        <button
-          onClick={cycleRate}
-          aria-label="Playback speed"
-          className="text-xs font-mono text-white/70 hover:text-white px-2 py-1 rounded-md hover:bg-white/10 transition-colors"
-        >
-          {state.rate.toFixed(2)}×
-        </button>
+        <div className="flex items-center gap-1">
+          <button
+            onClick={cycleRate}
+            aria-label="Playback speed"
+            className="text-xs font-mono text-white/70 hover:text-white px-2 py-1 rounded-md hover:bg-white/10 transition-colors"
+          >
+            {state.rate.toFixed(2)}×
+          </button>
+          {showSurahControls && (
+            <button
+              onClick={onFullscreen}
+              aria-label="Fullscreen"
+              className="w-8 h-8 rounded-full text-white/70 hover:text-white hover:bg-white/10 transition-colors flex items-center justify-center"
+            >
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M4 8V4h4M20 8V4h-4M4 16v4h4M20 16v4h-4" />
+              </svg>
+            </button>
+          )}
+        </div>
       </div>
 
       <div className="mt-3 flex items-center gap-2">
@@ -333,8 +436,23 @@ function ExpandedPanel({
         )}
       </div>
       {showSurahControls && (
-        <div className="mt-2 text-right text-[10px] text-white/50 font-mono">
-          Ayah {state.ayahIndex + 1}/{totalAyahs}
+        <div className="mt-2 flex items-center gap-2 text-xs">
+          <select
+            value={translationKey}
+            onChange={(e) => onTranslationChange(e.target.value)}
+            aria-label="Translation"
+            className="flex-1 min-w-0 bg-white/5 border border-white/10 rounded-md px-2 py-1 text-white/80 focus:outline-none focus:border-emerald-400"
+          >
+            <option value={ARABIC_KEY} className="bg-gray-900">Arabic (original)</option>
+            {(translations ?? []).map((t) => (
+              <option key={t.key} value={t.key} className="bg-gray-900">
+                {t.language_name} &middot; {t.translator}
+              </option>
+            ))}
+          </select>
+          <span className="text-white/50 font-mono shrink-0 text-[10px]">
+            Ayah {state.ayahIndex + 1}/{totalAyahs}
+          </span>
         </div>
       )}
 
@@ -348,6 +466,189 @@ function ExpandedPanel({
           </button>
         </div>
       )}
+    </motion.div>
+  );
+}
+
+function FullscreenPanel({
+  state,
+  actions,
+  translations,
+  translationKey,
+  onTranslationChange,
+  displayText,
+  displayMode,
+  onClose,
+}: {
+  state: ReturnType<typeof usePlayerState>;
+  actions: ReturnType<typeof usePlayerActions>;
+  translations?: TranslationOption[];
+  translationKey: string;
+  onTranslationChange: (key: string) => void;
+  displayText: string;
+  displayMode: "arabic" | "translation";
+  onClose: () => void;
+}) {
+  const totalAyahs = useTotalAyahs();
+  const isPlaying = state.status === "playing";
+  const progress = state.durationMs > 0 ? state.currentMs / state.durationMs : 0;
+  const surahMeta = SURAHS.find((s) => s.number === state.surah);
+
+  // ESC closes.
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") onClose();
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [onClose]);
+
+  return (
+    <motion.div
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      className="fixed inset-0 z-[200] bg-gray-950/95 backdrop-blur-xl flex flex-col"
+    >
+      {/* Top bar */}
+      <div className="flex items-center justify-between px-6 py-4 border-b border-white/5">
+        <div className="flex items-center gap-3">
+          <span className="w-8 h-8 bg-emerald-500 rounded-md flex items-center justify-center text-sm text-gray-950 font-black">Q</span>
+          <div>
+            <p className="text-sm font-semibold text-white">
+              {surahMeta ? `${surahMeta.number}. ${surahMeta.transliteration}` : `Surah ${state.surah}`}
+            </p>
+            <p className="text-[11px] text-white/50 font-mono">
+              {state.reciter.display_name} &middot; Ayah {state.ayahIndex + 1}/{totalAyahs}
+            </p>
+          </div>
+        </div>
+        <button
+          aria-label="Close fullscreen"
+          onClick={onClose}
+          className="w-10 h-10 rounded-full text-white/70 hover:text-white hover:bg-white/10 flex items-center justify-center"
+        >
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M6 6l12 12M18 6L6 18" />
+          </svg>
+        </button>
+      </div>
+
+      {/* Centered text */}
+      <div className="flex-1 flex items-center justify-center px-8 overflow-auto">
+        <div className="max-w-4xl w-full text-center">
+          {displayMode === "arabic" ? (
+            <p
+              dir="rtl"
+              className="font-serif text-white leading-[2] text-[2.5rem] md:text-[3.5rem]"
+            >
+              {displayText || "—"}
+            </p>
+          ) : (
+            <p
+              dir="auto"
+              className="text-white/95 leading-relaxed text-xl md:text-2xl"
+            >
+              {displayText || "—"}
+            </p>
+          )}
+        </div>
+      </div>
+
+      {/* Bottom controls */}
+      <div className="px-6 py-5 border-t border-white/5 space-y-3 max-w-3xl w-full mx-auto">
+        <div>
+          <input
+            type="range"
+            min={0}
+            max={1000}
+            value={Math.round(progress * 1000)}
+            onChange={(e) => {
+              const pct = Number(e.target.value) / 1000;
+              actions.seek(pct * state.durationMs);
+            }}
+            aria-label="Seek"
+            className="w-full accent-emerald-400"
+          />
+        </div>
+
+        <div className="flex items-center justify-center gap-3">
+          <button
+            aria-label="Shuffle"
+            aria-pressed={state.shuffle}
+            onClick={() => actions.setShuffle(!state.shuffle)}
+            className={`w-10 h-10 rounded-full transition flex items-center justify-center ${
+              state.shuffle ? "text-emerald-400 bg-emerald-500/15" : "text-white/60 hover:text-white hover:bg-white/10"
+            }`}
+          >
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
+              <path d="M10.59 9.17L5.41 4 4 5.41l5.17 5.17 1.42-1.41zM14.5 4l2.04 2.04L4 18.59 5.41 20 17.96 7.46 20 9.5V4h-5.5zm.33 9.41l-1.41 1.41 3.13 3.13L14.5 20H20v-5.5l-2.04 2.04-3.13-3.13z" />
+            </svg>
+          </button>
+          <button
+            aria-label="Previous"
+            onClick={actions.prevAyah}
+            className="w-11 h-11 rounded-full text-white/80 hover:bg-white/10 flex items-center justify-center"
+          >
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
+              <path d="M6 6h2v12H6zM9 12l11-7v14z" />
+            </svg>
+          </button>
+          <button
+            aria-label={isPlaying ? "Pause" : "Play"}
+            onClick={() => (isPlaying ? actions.pause() : actions.play())}
+            className="w-14 h-14 rounded-full bg-emerald-500/25 hover:bg-emerald-500/35 text-emerald-300 flex items-center justify-center"
+          >
+            {isPlaying ? (
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor">
+                <rect x="6" y="5" width="4" height="14" rx="1" />
+                <rect x="14" y="5" width="4" height="14" rx="1" />
+              </svg>
+            ) : (
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M7 5v14l12-7z" />
+              </svg>
+            )}
+          </button>
+          <button
+            aria-label="Next"
+            onClick={actions.nextAyah}
+            className="w-11 h-11 rounded-full text-white/80 hover:bg-white/10 flex items-center justify-center"
+          >
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
+              <path d="M16 6h2v12h-2zM15 12L4 19V5z" />
+            </svg>
+          </button>
+          <button
+            aria-label="Repeat surah"
+            aria-pressed={state.repeat}
+            onClick={() => actions.setRepeat(!state.repeat)}
+            className={`w-10 h-10 rounded-full transition flex items-center justify-center ${
+              state.repeat ? "text-emerald-400 bg-emerald-500/15" : "text-white/60 hover:text-white hover:bg-white/10"
+            }`}
+          >
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
+              <path d="M7 7h10v3l4-4-4-4v3H5v6h2V7zm10 10H7v-3l-4 4 4 4v-3h12v-6h-2v4z" />
+            </svg>
+          </button>
+        </div>
+
+        <div className="flex items-center gap-2 text-xs">
+          <select
+            value={translationKey}
+            onChange={(e) => onTranslationChange(e.target.value)}
+            aria-label="Translation"
+            className="flex-1 bg-white/5 border border-white/10 rounded-md px-2 py-1.5 text-white/80 focus:outline-none focus:border-emerald-400"
+          >
+            <option value={ARABIC_KEY} className="bg-gray-900">Arabic (original)</option>
+            {(translations ?? []).map((t) => (
+              <option key={t.key} value={t.key} className="bg-gray-900">
+                {t.language_name} &middot; {t.translator}
+              </option>
+            ))}
+          </select>
+        </div>
+      </div>
     </motion.div>
   );
 }

@@ -8,6 +8,7 @@ import { LanguageSelector } from "@/components/layout/language-selector";
 import { fetchReciters, fetchRecitation, pickDefaultReciter } from "@/lib/quran/recitations";
 import { RecitationProvider } from "@/components/reader/recitation-provider";
 import { ReciterPlayer } from "@/components/reader/reciter-player";
+import { fetchPrimaryTranslations, fetchSurah } from "@/lib/quran/api";
 
 interface PageProps {
   params: Promise<{ lang: string }>;
@@ -60,7 +61,11 @@ export default async function LandingPage({ params }: PageProps) {
   const dict = await getDictionary(lang);
 
   // Sample player: Al-Fatiha with default reciter.
-  const reciters = await fetchReciters();
+  const [reciters, translations, initialAyahs] = await Promise.all([
+    fetchReciters(),
+    fetchPrimaryTranslations(),
+    fetchSurah("arabic_source", 1),
+  ]);
   const defaultReciter = pickDefaultReciter(reciters);
   const initialRecitation = defaultReciter
     ? await fetchRecitation(defaultReciter.slug, 1)
@@ -169,12 +174,17 @@ export default async function LandingPage({ params }: PageProps) {
                 initialRecitation={initialRecitation}
                 disableGlobalShortcuts
               >
-                <div className="w-full max-w-md">
+                <div className="w-full max-w-xl">
                   <p className="text-[10px] text-emerald-500 font-mono tracking-widest mb-3 text-center md:text-right">
                     LISTEN &middot; {defaultReciter.display_name.split(" ").slice(-2).join(" ")}
                   </p>
                   <div className="flex md:justify-end justify-center">
-                    <ReciterPlayer defaultExpanded showSurahControls />
+                    <ReciterPlayer
+                      defaultExpanded
+                      showSurahControls
+                      translations={translations}
+                      initialAyahs={initialAyahs}
+                    />
                   </div>
                 </div>
               </RecitationProvider>

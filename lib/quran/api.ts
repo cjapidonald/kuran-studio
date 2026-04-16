@@ -88,3 +88,28 @@ export async function listTranslations(languageCode: string): Promise<{ key: str
     return [];
   }
 }
+
+export interface TranslationOption {
+  key: string;
+  translator: string;
+  language_code: string;
+  language_name: string;
+}
+
+/**
+ * All primary translations across languages — one per language — for use in
+ * user-facing pickers.
+ */
+export async function fetchPrimaryTranslations(): Promise<TranslationOption[]> {
+  try {
+    const supabase = getSupabase();
+    const { data } = await supabase
+      .from("translations")
+      .select("key, translator, language_code, language_name")
+      .eq("is_primary", true)
+      .order("language_name");
+    return (data as TranslationOption[]) || [];
+  } catch {
+    return [];
+  }
+}
