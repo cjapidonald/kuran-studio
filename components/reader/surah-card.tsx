@@ -20,7 +20,7 @@ export function SurahCard({ surah }: { surah: SurahMeta }) {
                 {surah.name}
               </span>
             </div>
-            <p className="text-xs text-gray-500 mt-0.5">{surah.translation}</p>
+            <p className="text-xs text-gray-500 mt-0.5">{surah.transliteration}</p>
             <div className="flex items-center gap-2 mt-2">
               <span className="text-[10px] text-gray-600 font-mono">{surah.ayahCount} ajete</span>
               <span className="text-[10px] text-gray-700">&bull;</span>

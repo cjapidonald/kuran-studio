@@ -1,9 +1,12 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
+import { SUPPORTED_LOCALES, DEFAULT_LOCALE } from "@/lib/i18n/languages";
 
 export async function middleware(request: NextRequest) {
   let supabaseResponse = NextResponse.next({ request });
+  const pathname = request.nextUrl.pathname;
 
+  // Create Supabase client for session refresh
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
@@ -25,26 +28,28 @@ export async function middleware(request: NextRequest) {
     }
   );
 
-  const { data: { session } } = await supabase.auth.getSession();
-  const user = session?.user;
+  // Refresh session
+  await supabase.auth.getSession();
 
-  const publicPaths = ["/", "/login", "/auth"];
-  const isPublic = publicPaths.some((p) =>
-    request.nextUrl.pathname === p || request.nextUrl.pathname.startsWith("/auth")
-  );
-
-  if (!user && !isPublic) {
-    const url = request.nextUrl.clone();
-    url.pathname = "/login";
-    url.searchParams.set("redirect", request.nextUrl.pathname);
-    return NextResponse.redirect(url);
+  // Skip locale logic for auth, sitemap, robots
+  if (
+    pathname.startsWith("/auth") ||
+    pathname === "/sitemap.xml" ||
+    pathname === "/robots.txt"
+  ) {
+    return supabaseResponse;
   }
 
-  if (user && request.nextUrl.pathname === "/login") {
-    const redirectTo = request.nextUrl.searchParams.get("redirect");
+  // Check if pathname has a valid locale prefix
+  const pathnameLocale = SUPPORTED_LOCALES.find(
+    (locale) => pathname.startsWith(`/${locale}/`) || pathname === `/${locale}`
+  );
+
+  // If no locale, redirect root "/" to detected locale (handled by app/page.tsx)
+  // For any other path without locale, add default locale
+  if (!pathnameLocale && pathname !== "/") {
     const url = request.nextUrl.clone();
-    url.pathname = redirectTo || "/reader";
-    url.search = "";
+    url.pathname = `/${DEFAULT_LOCALE}${pathname}`;
     return NextResponse.redirect(url);
   }
 

@@ -1,7 +1,8 @@
-# Kurani.studio
+# Kuran.studio
 
 ## About
-Kurani.studio is a web platform for reading and studying the Quran in Albanian (shqip). It uses the Albanian translation by Hasan Efendi Nahi from the QuranEnc API.
+Kuran.studio is a web platform for reading and studying the Quran in Albanian (shqip). It uses the Albanian translation by Hasan Efendi Nahi from the QuranEnc API. Domain: kuran.studio
+- GitHub: github.com/cjapidonald/kuran-studio
 
 ## Tech Stack
 - Next.js 15 (App Router) + React 19 + TypeScript

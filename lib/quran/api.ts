@@ -1,5 +1,4 @@
 const BASE_URL = "https://quranenc.com/api/v1/translation";
-const TRANSLATION_KEY = "albanian_nahi";
 
 export interface Ayah {
   id: string;
@@ -14,12 +13,12 @@ interface ApiResponse {
   result: Ayah[];
 }
 
-export async function fetchSurah(surahNumber: number): Promise<Ayah[]> {
+export async function fetchSurah(translationKey: string, surahNumber: number): Promise<Ayah[]> {
   const res = await fetch(
-    `${BASE_URL}/sura/${TRANSLATION_KEY}/${surahNumber}`,
+    `${BASE_URL}/sura/${translationKey}/${surahNumber}`,
     { next: { revalidate: 86400 } }
   );
-  if (!res.ok) throw new Error(`Failed to fetch surah ${surahNumber}`);
+  if (!res.ok) throw new Error(`Failed to fetch surah ${surahNumber} for ${translationKey}`);
   const data: ApiResponse = await res.json();
   return data.result;
 }

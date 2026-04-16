@@ -3,7 +3,12 @@
 import { useState } from "react";
 import type { Ayah } from "@/lib/quran/api";
 
-export function AyahDisplay({ ayah }: { ayah: Ayah }) {
+interface AyahDisplayProps {
+  ayah: Ayah;
+  footnotesLabel?: string;
+}
+
+export function AyahDisplay({ ayah, footnotesLabel = "Footnotes" }: AyahDisplayProps) {
   const [showFootnotes, setShowFootnotes] = useState(false);
   const hasFootnotes = ayah.footnotes && ayah.footnotes.trim().length > 0;
 
@@ -26,7 +31,7 @@ export function AyahDisplay({ ayah }: { ayah: Ayah }) {
                 onClick={() => setShowFootnotes(!showFootnotes)}
                 className="text-[11px] text-emerald-500 hover:text-emerald-400 transition-colors font-mono"
               >
-                {showFootnotes ? "Fshih shenimet" : "Shiko shenimet"}
+                {showFootnotes ? `— ${footnotesLabel}` : footnotesLabel}
               </button>
               {showFootnotes && (
                 <div className="text-xs text-gray-500 leading-relaxed bg-gray-800/30 rounded-lg p-3 border border-gray-800/50">
