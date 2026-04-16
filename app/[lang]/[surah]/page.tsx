@@ -1,12 +1,16 @@
 import { notFound } from "next/navigation";
 import Link from "next/link";
-import { fetchSurah } from "@/lib/quran/api";
+import { fetchSurah, type Ayah } from "@/lib/quran/api";
 import { SURAHS } from "@/lib/quran/surahs";
 import { getSurahDescription, getRelatedSurahs } from "@/lib/quran/descriptions";
+import { fetchReciters, fetchRecitation, pickDefaultReciter } from "@/lib/quran/recitations";
 import { LANGUAGES, SUPPORTED_LOCALES } from "@/lib/i18n/languages";
 import { getDictionary } from "@/lib/i18n/get-dictionary";
-import { AyahDisplay } from "@/components/reader/ayah-display";
 import { LanguageSelector } from "@/components/layout/language-selector";
+import { RecitationProvider } from "@/components/reader/recitation-provider";
+import { ArabicBlock } from "@/components/reader/arabic-block";
+import { TranslationParagraph } from "@/components/reader/translation-paragraph";
+import { ReciterPlayer } from "@/components/reader/reciter-player";
 import type { Metadata } from "next";
 
 interface PageProps {
@@ -38,7 +42,6 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   const surahName = dict[`surah.${meta.number}`] || meta.transliteration;
   const title = `${meta.transliteration} - ${surahName}`;
 
-  // Unique description per surah (from Supabase), falls back to template
   const uniqueDesc = await getSurahDescription(lang, surahNum);
   const description =
     uniqueDesc ||
@@ -74,6 +77,63 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
 
 export const revalidate = 86400;
 
+function toArabicDigits(n: number) {
+  const map = ["٠", "١", "٢", "٣", "٤", "٥", "٦", "٧", "٨", "٩"];
+  return String(n).split("").map((c) => map[Number(c)] ?? c).join("");
+}
+
+function ArabicBlockFallback({ ayahs }: { ayahs: Ayah[] }) {
+  return (
+    <div dir="rtl" className="text-right font-serif text-white/90 leading-[2.4] text-[1.7rem]">
+      {ayahs.map((a) => (
+        <span key={a.id} className="inline">
+          {a.arabic_text}
+          <span className="inline-block text-emerald-400/80 text-base mx-1 align-middle">
+            ﴿{toArabicDigits(parseInt(a.aya, 10))}﴾
+          </span>{" "}
+        </span>
+      ))}
+    </div>
+  );
+}
+
+function TranslationParagraphFallback({
+  ayahs,
+  footnotesLabel,
+}: {
+  ayahs: Ayah[];
+  footnotesLabel: string;
+}) {
+  const withFn = ayahs.filter((a) => a.footnotes?.trim());
+  return (
+    <div className="mt-10">
+      <p className="text-base text-gray-300 leading-relaxed">
+        {ayahs.map((a) => (
+          <span key={a.id} dir="auto">
+            <sup className="text-[10px] text-emerald-500 font-mono mx-0.5">{a.aya}</sup>
+            {a.translation}{" "}
+          </span>
+        ))}
+      </p>
+      {withFn.length > 0 && (
+        <details className="mt-6 border-t border-gray-800/40 pt-4 text-xs text-gray-500">
+          <summary className="text-[11px] text-emerald-500 font-mono cursor-pointer">
+            {footnotesLabel} ({withFn.length})
+          </summary>
+          <ul className="mt-3 space-y-2 leading-relaxed">
+            {withFn.map((a) => (
+              <li key={a.id}>
+                <span className="text-emerald-400 font-mono mr-2">({a.aya})</span>
+                {a.footnotes}
+              </li>
+            ))}
+          </ul>
+        </details>
+      )}
+    </div>
+  );
+}
+
 export default async function SurahPage({ params }: PageProps) {
   const { lang, surah: surahParam } = await params;
   const surahNum = parseInt(surahParam, 10);
@@ -98,6 +158,13 @@ export default async function SurahPage({ params }: PageProps) {
 
   const surahName = dict[`surah.${meta.number}`] || meta.transliteration;
   const revelationLabel = meta.revelationType === "meccan" ? dict["reader.meccan"] : dict["reader.medinan"];
+
+  const reciters = await fetchReciters();
+  const defaultReciter = pickDefaultReciter(reciters);
+  const initialRecitation = defaultReciter
+    ? await fetchRecitation(defaultReciter.slug, surahNum)
+    : [];
+  const hasRecitation = Boolean(defaultReciter) && initialRecitation.length > 0;
 
   const chapterJsonLd = {
     "@context": "https://schema.org",
@@ -126,7 +193,7 @@ export default async function SurahPage({ params }: PageProps) {
     ],
   };
 
-  return (
+  const body = (
     <div className="min-h-screen bg-gray-950 text-gray-200">
       <script
         type="application/ld+json"
@@ -136,19 +203,24 @@ export default async function SurahPage({ params }: PageProps) {
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbJsonLd) }}
       />
-      {/* Header bar */}
+
       <nav className="sticky top-0 z-50 bg-gray-950/80 backdrop-blur-md border-b border-white/5">
         <div className="max-w-3xl mx-auto flex items-center justify-between gap-2 px-4 py-3">
           <Link href={`/${lang}`} className="text-xs text-emerald-500 hover:text-emerald-400 font-mono tracking-widest transition-colors shrink-0">
             &larr; {dict["reader.back"]}
           </Link>
-          <span className="text-xs text-gray-500 font-mono hidden sm:inline">{meta.transliteration}</span>
-          <LanguageSelector currentLang={lang} />
+          <div className="flex items-center gap-2">
+            {hasRecitation ? (
+              <ReciterPlayer />
+            ) : (
+              <span className="text-xs text-gray-500 font-mono hidden sm:inline">{meta.transliteration}</span>
+            )}
+            <LanguageSelector currentLang={lang} />
+          </div>
         </div>
       </nav>
 
       <div className="max-w-3xl mx-auto px-4 py-8">
-        {/* Surah header */}
         <div className="text-center mb-8">
           <h1 className="text-3xl font-bold">{meta.transliteration}</h1>
           <p className="text-xl font-serif text-gray-400 mt-1" dir="rtl">{meta.name}</p>
@@ -157,21 +229,24 @@ export default async function SurahPage({ params }: PageProps) {
           </p>
         </div>
 
-        {/* Bismillah */}
         {surahNum !== 9 && surahNum !== 1 && (
           <div className="text-center mb-6 py-4">
             <p className="text-lg font-serif text-emerald-400" dir="rtl">بِسْمِ ٱللَّهِ ٱلرَّحْمَٰنِ ٱلرَّحِيمِ</p>
           </div>
         )}
 
-        {/* Ayahs */}
-        <div className="space-y-3">
-          {ayahs.map((ayah) => (
-            <AyahDisplay key={ayah.id} ayah={ayah} footnotesLabel={dict["reader.footnotes"]} />
-          ))}
-        </div>
+        {hasRecitation ? (
+          <>
+            <ArabicBlock ayahs={ayahs} />
+            <TranslationParagraph ayahs={ayahs} footnotesLabel={dict["reader.footnotes"]} />
+          </>
+        ) : (
+          <>
+            <ArabicBlockFallback ayahs={ayahs} />
+            <TranslationParagraphFallback ayahs={ayahs} footnotesLabel={dict["reader.footnotes"]} />
+          </>
+        )}
 
-        {/* Navigation */}
         <div className="flex justify-between items-center mt-10 pt-6 border-t border-gray-800/50">
           {prev ? (
             <Link href={`/${lang}/${prev.number}`} className="text-sm text-gray-400 hover:text-emerald-400 transition-colors">
@@ -185,7 +260,6 @@ export default async function SurahPage({ params }: PageProps) {
           ) : <div />}
         </div>
 
-        {/* Related Surahs */}
         {related.length > 0 && (
           <section className="mt-14 pt-8 border-t border-gray-800/30">
             <h2 className="text-xs font-mono text-emerald-500 tracking-widest mb-4">RELATED SURAHS</h2>
@@ -216,7 +290,6 @@ export default async function SurahPage({ params }: PageProps) {
           </section>
         )}
 
-        {/* Browse all surahs link */}
         <div className="mt-10 pt-6 border-t border-gray-800/30 text-center">
           <Link
             href={`/${lang}`}
@@ -232,5 +305,18 @@ export default async function SurahPage({ params }: PageProps) {
         </div>
       </div>
     </div>
+  );
+
+  return hasRecitation && defaultReciter ? (
+    <RecitationProvider
+      surah={surahNum}
+      reciters={reciters}
+      initialReciter={defaultReciter}
+      initialRecitation={initialRecitation}
+    >
+      {body}
+    </RecitationProvider>
+  ) : (
+    body
   );
 }
