@@ -12,7 +12,7 @@ const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_KEY, {
   auth: { persistSession: false },
 });
 
-const QURAN_COM_API = "https://api.quran.com/api/v4";
+const QURAN_COM_API = "https://api.quran.com/api/v4/resources";
 
 interface ReciterSeed {
   slug: string;
@@ -24,16 +24,67 @@ interface ReciterSeed {
 }
 
 const RECITERS: ReciterSeed[] = [
-  { slug: "alafasy",              display_name: "Mishary Rashid Al-Afasy",  style: "murattal", match: { name_contains: "Afasy",   style: "murattal" }, sort_order: 10, is_default: true },
-  { slug: "abdul_basit_mujawwad", display_name: "Abdul Basit Abd us-Samad", style: "mujawwad", match: { name_contains: "Basit",   style: "mujawwad" }, sort_order: 20, is_default: false },
-  { slug: "maher_al_muaiqly",     display_name: "Maher Al-Muaiqly",         style: "murattal", match: { name_contains: "Muaiqly", style: "murattal" }, sort_order: 30, is_default: false },
-  { slug: "sudais",               display_name: "Abdur-Rahman As-Sudais",   style: "murattal", match: { name_contains: "Sudais",  style: "murattal" }, sort_order: 40, is_default: false },
-  { slug: "husary",               display_name: "Mahmoud Khalil Al-Husary", style: "murattal", match: { name_contains: "Husary",  style: "murattal" }, sort_order: 50, is_default: false },
+  { slug: "alafasy",              display_name: "Mishary Rashid Al-Afasy",        style: "murattal", match: { name_contains: "Mishari",  style: "murattal" }, sort_order: 10, is_default: true },
+  { slug: "abdul_basit_mujawwad", display_name: "Abdul Basit Abd us-Samad",       style: "mujawwad", match: { name_contains: "AbdulBaset", style: "mujawwad" }, sort_order: 20, is_default: false },
+  { slug: "minshawi_murattal",    display_name: "Mohamed Siddiq al-Minshawi",    style: "murattal", match: { name_contains: "Minshawi", style: "murattal" }, sort_order: 30, is_default: false },
+  { slug: "sudais",               display_name: "Abdur-Rahman As-Sudais",         style: "murattal", match: { name_contains: "Sudais",  style: "murattal" }, sort_order: 40, is_default: false },
+  { slug: "husary",               display_name: "Mahmoud Khalil Al-Husary",       style: "murattal", match: { name_contains: "Al-Husary",  style: "murattal" }, sort_order: 50, is_default: false },
 ];
 
+interface QuranComRecitation {
+  id: number;
+  reciter_name: string;
+  style: string | null;
+  translated_name?: { name: string; language_name: string };
+}
+
+async function fetchJson<T>(url: string, tries = 3): Promise<T> {
+  for (let attempt = 1; attempt <= tries; attempt++) {
+    const res = await fetch(url);
+    if (res.ok) return (await res.json()) as T;
+    if (res.status === 429 || res.status >= 500) {
+      const backoff = 500 * attempt;
+      console.warn(`  ${res.status} on ${url} — retrying in ${backoff}ms (${attempt}/${tries})`);
+      await new Promise((r) => setTimeout(r, backoff));
+      continue;
+    }
+    throw new Error(`HTTP ${res.status} on ${url}`);
+  }
+  throw new Error(`Exceeded ${tries} retries on ${url}`);
+}
+
+async function resolveReciterIds(): Promise<Map<string, number>> {
+  const data = await fetchJson<{ recitations: QuranComRecitation[] }>(
+    `${QURAN_COM_API}/recitations`,
+  );
+  const resolved = new Map<string, number>();
+  for (const r of RECITERS) {
+    const matches = data.recitations.filter((q) => {
+      const nameMatch = q.reciter_name.toLowerCase().includes(r.match.name_contains.toLowerCase());
+      const qStyle = (q.style || "").toLowerCase();
+      // "murattal" is the default style; Quran.com often leaves it empty or says "Murattal"
+      const styleMatch =
+        r.match.style === "mujawwad"
+          ? qStyle.includes("mujawwad")
+          : qStyle === "" || qStyle === "murattal";
+      return nameMatch && styleMatch;
+    });
+    if (matches.length === 0) {
+      throw new Error(`Reciter not found: ${r.slug} (looked for name containing "${r.match.name_contains}", style=${r.match.style})`);
+    }
+    if (matches.length > 1) {
+      throw new Error(`Ambiguous reciter match for ${r.slug}: ${matches.map((m) => `${m.id}:${m.reciter_name}(${m.style})`).join(", ")}`);
+    }
+    resolved.set(r.slug, matches[0].id);
+    console.log(`  resolved ${r.slug} → id ${matches[0].id} (${matches[0].reciter_name})`);
+  }
+  return resolved;
+}
+
 async function main() {
-  console.log("seed-reciters: start");
-  // resolveReciterIds, seedReciters, seedRecitations — added in later tasks
+  console.log("seed-reciters: resolving Quran.com IDs");
+  const ids = await resolveReciterIds();
+  console.log("seed-reciters: resolved", ids);
 }
 
 main().catch((err) => {
