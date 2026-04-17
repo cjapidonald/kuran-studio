@@ -633,122 +633,125 @@ function FullscreenPanel({
         </button>
       </div>
 
-      {/* Centered text */}
-      <div className="flex-1 flex items-center justify-center px-8 overflow-auto">
-        <div className="max-w-4xl w-full text-center">
-          {displayMode === "arabic" ? (
-            <p
-              dir="rtl"
-              className="font-serif text-white leading-[2] text-[2.5rem] md:text-[3.5rem]"
-            >
-              {displayText || "—"}
-            </p>
-          ) : (
-            <p
-              dir="auto"
-              className="text-white/95 leading-relaxed text-xl md:text-2xl"
-            >
-              {displayText || "—"}
-            </p>
-          )}
-        </div>
-      </div>
-
-      {/* Bottom controls */}
-      <div className="px-6 py-5 border-t border-white/5 space-y-3 max-w-3xl w-full mx-auto">
-        <div>
-          <input
-            type="range"
-            min={0}
-            max={1000}
-            value={Math.round(surahProgress * 1000)}
-            onChange={(e) => {
-              if (surahTotalMs === 0) return;
-              const pct = Number(e.target.value) / 1000;
-              actions.seekInSurah(pct * surahTotalMs);
-            }}
-            aria-label="Seek within surah"
-            className="w-full accent-emerald-400"
-          />
-        </div>
-
-        <div className="flex items-center justify-center gap-3">
-          <button
-            aria-label="Shuffle"
-            aria-pressed={state.shuffle}
-            onClick={() => actions.setShuffle(!state.shuffle)}
-            className={`w-10 h-10 rounded-full transition flex items-center justify-center ${
-              state.shuffle ? "text-emerald-400 bg-emerald-500/15" : "text-white/60 hover:text-white hover:bg-white/10"
-            }`}
-          >
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
-              <path d="M10.59 9.17L5.41 4 4 5.41l5.17 5.17 1.42-1.41zM14.5 4l2.04 2.04L4 18.59 5.41 20 17.96 7.46 20 9.5V4h-5.5zm.33 9.41l-1.41 1.41 3.13 3.13L14.5 20H20v-5.5l-2.04 2.04-3.13-3.13z" />
-            </svg>
-          </button>
-          <button
-            aria-label="Previous surah"
-            onClick={prevSurah}
-            disabled={state.surah <= 1}
-            className="w-11 h-11 rounded-full text-white/80 hover:bg-white/10 disabled:opacity-40 flex items-center justify-center"
-          >
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
-              <path d="M6 6h2v12H6zM9 12l11-7v14z" />
-            </svg>
-          </button>
-          <button
-            aria-label={isPlaying ? "Pause" : "Play"}
-            onClick={() => (isPlaying ? actions.pause() : actions.play())}
-            className="w-14 h-14 rounded-full bg-emerald-500/25 hover:bg-emerald-500/35 text-emerald-300 flex items-center justify-center"
-          >
-            {isPlaying ? (
-              <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor">
-                <rect x="6" y="5" width="4" height="14" rx="1" />
-                <rect x="14" y="5" width="4" height="14" rx="1" />
-              </svg>
+      {/* Split body: text 55% on the left, player 45% on the right */}
+      <div className="flex-1 flex flex-row min-h-0">
+        {/* Text column */}
+        <div className="basis-[55%] shrink-0 grow-0 min-w-0 flex items-center justify-center px-8 py-6 overflow-auto">
+          <div className="w-full text-center">
+            {displayMode === "arabic" ? (
+              <p
+                dir="rtl"
+                className="font-serif text-white leading-[2] text-[2.5rem] md:text-[3.5rem] break-words"
+              >
+                {displayText || "—"}
+              </p>
             ) : (
-              <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor">
-                <path d="M7 5v14l12-7z" />
-              </svg>
+              <p
+                dir="auto"
+                className="text-white/95 leading-relaxed text-xl md:text-2xl break-words"
+              >
+                {displayText || "—"}
+              </p>
             )}
-          </button>
-          <button
-            aria-label="Next surah"
-            onClick={nextSurah}
-            disabled={state.surah >= 114}
-            className="w-11 h-11 rounded-full text-white/80 hover:bg-white/10 disabled:opacity-40 flex items-center justify-center"
-          >
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
-              <path d="M16 6h2v12h-2zM15 12L4 19V5z" />
-            </svg>
-          </button>
-          <button
-            aria-label="Repeat surah"
-            aria-pressed={state.repeat}
-            onClick={() => actions.setRepeat(!state.repeat)}
-            className={`w-10 h-10 rounded-full transition flex items-center justify-center ${
-              state.repeat ? "text-emerald-400 bg-emerald-500/15" : "text-white/60 hover:text-white hover:bg-white/10"
-            }`}
-          >
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
-              <path d="M7 7h10v3l4-4-4-4v3H5v6h2V7zm10 10H7v-3l-4 4 4 4v-3h12v-6h-2v4z" />
-            </svg>
-          </button>
+          </div>
         </div>
 
-        <div className="flex items-center gap-2 text-xs">
-          <select
-            value={translationKey}
-            onChange={(e) => onTranslationChange(e.target.value)}
-            aria-label="Translation"
-            className="flex-1 bg-white/5 border border-white/10 rounded-md px-2 py-1.5 text-white/80 focus:outline-none focus:border-emerald-400"
-          >
-            <option value={ARABIC_KEY} className="bg-gray-900">Arabic (original)</option>
-            {(translations ?? []).map((t) => (
-              <option key={t.key} value={t.key} className="bg-gray-900">
-                {t.language_name} &middot; {t.translator}
-              </option>
-            ))}
-          </select>
+        {/* Player column */}
+        <div className="basis-[45%] shrink-0 grow-0 min-w-0 border-l border-white/5 flex flex-col justify-center px-6 py-5 space-y-3 overflow-auto">
+          <div>
+            <input
+              type="range"
+              min={0}
+              max={1000}
+              value={Math.round(surahProgress * 1000)}
+              onChange={(e) => {
+                if (surahTotalMs === 0) return;
+                const pct = Number(e.target.value) / 1000;
+                actions.seekInSurah(pct * surahTotalMs);
+              }}
+              aria-label="Seek within surah"
+              className="w-full accent-emerald-400"
+            />
+          </div>
+
+          <div className="flex items-center justify-center gap-3">
+            <button
+              aria-label="Shuffle"
+              aria-pressed={state.shuffle}
+              onClick={() => actions.setShuffle(!state.shuffle)}
+              className={`w-10 h-10 rounded-full transition flex items-center justify-center ${
+                state.shuffle ? "text-emerald-400 bg-emerald-500/15" : "text-white/60 hover:text-white hover:bg-white/10"
+              }`}
+            >
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M10.59 9.17L5.41 4 4 5.41l5.17 5.17 1.42-1.41zM14.5 4l2.04 2.04L4 18.59 5.41 20 17.96 7.46 20 9.5V4h-5.5zm.33 9.41l-1.41 1.41 3.13 3.13L14.5 20H20v-5.5l-2.04 2.04-3.13-3.13z" />
+              </svg>
+            </button>
+            <button
+              aria-label="Previous surah"
+              onClick={prevSurah}
+              disabled={state.surah <= 1}
+              className="w-11 h-11 rounded-full text-white/80 hover:bg-white/10 disabled:opacity-40 flex items-center justify-center"
+            >
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M6 6h2v12H6zM9 12l11-7v14z" />
+              </svg>
+            </button>
+            <button
+              aria-label={isPlaying ? "Pause" : "Play"}
+              onClick={() => (isPlaying ? actions.pause() : actions.play())}
+              className="w-14 h-14 rounded-full bg-emerald-500/25 hover:bg-emerald-500/35 text-emerald-300 flex items-center justify-center"
+            >
+              {isPlaying ? (
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor">
+                  <rect x="6" y="5" width="4" height="14" rx="1" />
+                  <rect x="14" y="5" width="4" height="14" rx="1" />
+                </svg>
+              ) : (
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M7 5v14l12-7z" />
+                </svg>
+              )}
+            </button>
+            <button
+              aria-label="Next surah"
+              onClick={nextSurah}
+              disabled={state.surah >= 114}
+              className="w-11 h-11 rounded-full text-white/80 hover:bg-white/10 disabled:opacity-40 flex items-center justify-center"
+            >
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M16 6h2v12h-2zM15 12L4 19V5z" />
+              </svg>
+            </button>
+            <button
+              aria-label="Repeat surah"
+              aria-pressed={state.repeat}
+              onClick={() => actions.setRepeat(!state.repeat)}
+              className={`w-10 h-10 rounded-full transition flex items-center justify-center ${
+                state.repeat ? "text-emerald-400 bg-emerald-500/15" : "text-white/60 hover:text-white hover:bg-white/10"
+              }`}
+            >
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M7 7h10v3l4-4-4-4v3H5v6h2V7zm10 10H7v-3l-4 4 4 4v-3h12v-6h-2v4z" />
+              </svg>
+            </button>
+          </div>
+
+          <div className="flex items-center gap-2 text-xs">
+            <select
+              value={translationKey}
+              onChange={(e) => onTranslationChange(e.target.value)}
+              aria-label="Translation"
+              className="flex-1 min-w-0 bg-white/5 border border-white/10 rounded-md px-2 py-1.5 text-white/80 focus:outline-none focus:border-emerald-400"
+            >
+              <option value={ARABIC_KEY} className="bg-gray-900">Arabic (original)</option>
+              {(translations ?? []).map((t) => (
+                <option key={t.key} value={t.key} className="bg-gray-900">
+                  {t.language_name} &middot; {t.translator}
+                </option>
+              ))}
+            </select>
+          </div>
         </div>
       </div>
     </motion.div>
