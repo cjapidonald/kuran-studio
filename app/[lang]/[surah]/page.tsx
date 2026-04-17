@@ -243,7 +243,7 @@ export default async function SurahPage({ params }: PageProps) {
         )}
 
         {hasRecitation ? (
-          <AyahByAyahBlock ayahs={ayahs} footnotesLabel={dict["reader.footnotes"]} />
+          <AyahByAyahBlock ayahs={ayahs} footnotesLabel={dict["reader.footnotes"]} surah={surahNum} />
         ) : (
           <AyahByAyahFallback ayahs={ayahs} footnotesLabel={dict["reader.footnotes"]} />
         )}
