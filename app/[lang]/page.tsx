@@ -9,6 +9,7 @@ import { fetchReciters, fetchRecitation, pickDefaultReciter } from "@/lib/quran/
 import { RecitationProvider } from "@/components/reader/recitation-provider";
 import { ReciterPlayer } from "@/components/reader/reciter-player";
 import { fetchPrimaryTranslations, fetchSurah } from "@/lib/quran/api";
+import { KhatmNavLink } from "@/components/layout/khatm-nav-link";
 
 interface PageProps {
   params: Promise<{ lang: string }>;
@@ -120,6 +121,11 @@ export default async function LandingPage({ params }: PageProps) {
         </Link>
         <div className="flex items-center gap-3">
           <Link href={`/${lang}`} className="text-sm px-4 py-2 rounded-md text-gray-300 hover:text-white hover:bg-white/5 transition hidden sm:inline">{dict["nav.home"] || "Home"}</Link>
+          <KhatmNavLink
+            lang={lang}
+            label={dict["nav.khatm"] || "Khatm"}
+            className="text-sm px-4 py-2 rounded-md text-emerald-400 hover:text-emerald-300 hover:bg-emerald-500/10 transition hidden sm:inline"
+          />
           <a href={`/${lang}#features`} className="text-sm px-4 py-2 rounded-md text-gray-300 hover:text-white hover:bg-white/5 transition hidden sm:inline">{dict["nav.features"]}</a>
           <Link href={`/${lang}/blog`} className="text-sm px-4 py-2 rounded-md text-gray-300 hover:text-white hover:bg-white/5 transition hidden sm:inline">{dict["nav.blog"]}</Link>
           <LanguageSelector currentLang={lang} />

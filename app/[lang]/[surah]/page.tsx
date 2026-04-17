@@ -11,6 +11,7 @@ import { RecitationProvider } from "@/components/reader/recitation-provider";
 import { ArabicBlock } from "@/components/reader/arabic-block";
 import { TranslationParagraph } from "@/components/reader/translation-paragraph";
 import { ReciterPlayer } from "@/components/reader/reciter-player";
+import { KhatmNavLink } from "@/components/layout/khatm-nav-link";
 import type { Metadata } from "next";
 
 interface PageProps {
@@ -210,6 +211,11 @@ export default async function SurahPage({ params }: PageProps) {
             &larr; {dict["reader.back"]}
           </Link>
           <div className="flex items-center gap-2">
+            <KhatmNavLink
+              lang={lang}
+              label={dict["nav.khatm"] || "Khatm"}
+              className="text-xs text-emerald-400 hover:text-emerald-300 font-mono tracking-widest transition-colors hidden sm:inline"
+            />
             {hasRecitation ? (
               <ReciterPlayer />
             ) : (
