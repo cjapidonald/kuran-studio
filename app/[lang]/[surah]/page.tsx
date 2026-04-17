@@ -8,10 +8,10 @@ import { LANGUAGES, SUPPORTED_LOCALES } from "@/lib/i18n/languages";
 import { getDictionary } from "@/lib/i18n/get-dictionary";
 import { LanguageSelector } from "@/components/layout/language-selector";
 import { RecitationProvider } from "@/components/reader/recitation-provider";
-import { ArabicBlock } from "@/components/reader/arabic-block";
-import { TranslationParagraph } from "@/components/reader/translation-paragraph";
+import { AyahByAyahBlock } from "@/components/reader/ayah-by-ayah-block";
 import { ReciterPlayer } from "@/components/reader/reciter-player";
 import { KhatmNavLink } from "@/components/layout/khatm-nav-link";
+import { AuthNavLink } from "@/components/layout/auth-nav-link";
 import type { Metadata } from "next";
 
 interface PageProps {
@@ -83,22 +83,7 @@ function toArabicDigits(n: number) {
   return String(n).split("").map((c) => map[Number(c)] ?? c).join("");
 }
 
-function ArabicBlockFallback({ ayahs }: { ayahs: Ayah[] }) {
-  return (
-    <div dir="rtl" className="text-right font-serif text-white/90 leading-[2.4] text-[1.7rem]">
-      {ayahs.map((a) => (
-        <span key={a.id} className="inline">
-          {a.arabic_text}
-          <span className="inline-block text-emerald-400/80 text-base mx-1 align-middle">
-            ﴿{toArabicDigits(parseInt(a.aya, 10))}﴾
-          </span>{" "}
-        </span>
-      ))}
-    </div>
-  );
-}
-
-function TranslationParagraphFallback({
+function AyahByAyahFallback({
   ayahs,
   footnotesLabel,
 }: {
@@ -107,15 +92,21 @@ function TranslationParagraphFallback({
 }) {
   const withFn = ayahs.filter((a) => a.footnotes?.trim());
   return (
-    <div className="mt-10">
-      <p className="text-base text-gray-300 leading-relaxed">
-        {ayahs.map((a) => (
-          <span key={a.id} dir="auto">
-            <sup className="text-[10px] text-emerald-500 font-mono mx-0.5">{a.aya}</sup>
-            {a.translation}{" "}
-          </span>
-        ))}
-      </p>
+    <div className="space-y-8">
+      {ayahs.map((a) => (
+        <div key={a.id} className="rounded-xl px-4 py-4 border border-transparent">
+          <div dir="rtl" className="text-right font-serif text-white/90 leading-[2.4] text-[1.7rem]">
+            {a.arabic_text}
+            <span className="inline-block text-emerald-400/80 text-base mx-1 align-middle">
+              ﴿{toArabicDigits(parseInt(a.aya, 10))}﴾
+            </span>
+          </div>
+          <p dir="auto" className="mt-3 text-base text-gray-400 leading-relaxed">
+            <sup className="text-[10px] text-emerald-500 font-mono mr-0.5">{a.aya}</sup>
+            {a.translation}
+          </p>
+        </div>
+      ))}
       {withFn.length > 0 && (
         <details className="mt-6 border-t border-gray-800/40 pt-4 text-xs text-gray-500">
           <summary className="text-[11px] text-emerald-500 font-mono cursor-pointer">
@@ -216,6 +207,16 @@ export default async function SurahPage({ params }: PageProps) {
               label={dict["nav.khatm"] || "Khatm"}
               className="text-xs text-emerald-400 hover:text-emerald-300 font-mono tracking-widest transition-colors hidden sm:inline"
             />
+            <AuthNavLink
+              href={`/${lang}/reflections`}
+              label={dict["nav.reflections"] || "Reflections"}
+              className="text-xs text-emerald-400 hover:text-emerald-300 font-mono tracking-widest transition-colors hidden sm:inline"
+            />
+            <AuthNavLink
+              href={`/${lang}/devotion`}
+              label={dict["nav.devotion"] || "Devotion"}
+              className="text-xs text-emerald-400 hover:text-emerald-300 font-mono tracking-widest transition-colors hidden sm:inline"
+            />
             {hasRecitation ? (
               <ReciterPlayer />
             ) : (
@@ -242,15 +243,9 @@ export default async function SurahPage({ params }: PageProps) {
         )}
 
         {hasRecitation ? (
-          <>
-            <ArabicBlock ayahs={ayahs} />
-            <TranslationParagraph ayahs={ayahs} footnotesLabel={dict["reader.footnotes"]} />
-          </>
+          <AyahByAyahBlock ayahs={ayahs} footnotesLabel={dict["reader.footnotes"]} />
         ) : (
-          <>
-            <ArabicBlockFallback ayahs={ayahs} />
-            <TranslationParagraphFallback ayahs={ayahs} footnotesLabel={dict["reader.footnotes"]} />
-          </>
+          <AyahByAyahFallback ayahs={ayahs} footnotesLabel={dict["reader.footnotes"]} />
         )}
 
         <div className="flex justify-between items-center mt-10 pt-6 border-t border-gray-800/50">
