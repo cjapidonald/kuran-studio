@@ -301,6 +301,10 @@ function useCtx() {
   return v;
 }
 
+function useCtxSafe() {
+  return useContext(Ctx);
+}
+
 function shallowEq(a: unknown, b: unknown): boolean {
   if (Object.is(a, b)) return true;
   if (typeof a !== "object" || typeof b !== "object" || !a || !b) return false;
@@ -332,15 +336,38 @@ function useStoreSelector<T>(
   return useSyncExternalStore(store.subscribe, getSnapshot, getSnapshot);
 }
 
+function useStoreSelectorWithCtx<T>(
+  ctx: ContextValue,
+  selector: (s: PlayerState) => T,
+  isEqual: (a: T, b: T) => boolean = Object.is,
+): T {
+  const { store } = ctx;
+  const lastRef = useRef<{ value: T; valid: boolean }>({ value: undefined as unknown as T, valid: false });
+  const getSnapshot = () => {
+    const next = selector(store.getState());
+    if (lastRef.current.valid && isEqual(lastRef.current.value, next)) {
+      return lastRef.current.value;
+    }
+    lastRef.current = { value: next, valid: true };
+    return next;
+  };
+  return useSyncExternalStore(store.subscribe, getSnapshot, getSnapshot);
+}
+
 export function useActiveAyah(): number | null {
-  return useStoreSelector((s) => {
+  const ctx = useCtxSafe();
+  if (!ctx) return null;
+  return useStoreSelectorWithCtx(ctx, (s) => {
     if (s.status === "idle") return null;
     return s.ayahIndex;
   });
 }
 
 export function useActiveWord(): { ayahIndex: number; word: number } | null {
-  return useStoreSelector(
+  const ctx = useCtxSafe();
+  if (!ctx) return null;
+  return useStoreSelectorWithCtx(
+    ctx,
     (s) => {
       if (s.status !== "playing" || s.activeWord === null) return null;
       return { ayahIndex: s.ayahIndex, word: s.activeWord };
