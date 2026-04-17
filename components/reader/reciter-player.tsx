@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { motion, AnimatePresence } from "motion/react";
 import {
   usePlayerActions,
@@ -514,6 +514,7 @@ function FullscreenPanel({
   const totalAyahs = useTotalAyahs();
   const isPlaying = state.status === "playing";
   const surahMeta = SURAHS.find((s) => s.number === state.surah);
+  const rootRef = useRef<HTMLDivElement>(null);
 
   // Surah-level timeline, same as ExpandedPanel.
   const cumDurations = (() => {
@@ -536,17 +537,73 @@ function FullscreenPanel({
     if (state.surah < 114) actions.setSurah(state.surah + 1);
   };
 
-  // ESC closes.
+  // Request real device fullscreen when the panel mounts; close the panel
+  // if the user leaves fullscreen via ESC / F11 / OS gesture.
   useEffect(() => {
+    const el = rootRef.current;
+    if (!el) return;
+
+    type FsElement = HTMLElement & {
+      webkitRequestFullscreen?: () => Promise<void> | void;
+      msRequestFullscreen?: () => Promise<void> | void;
+    };
+    type FsDocument = Document & {
+      webkitFullscreenElement?: Element | null;
+      msFullscreenElement?: Element | null;
+      webkitExitFullscreen?: () => Promise<void> | void;
+      msExitFullscreen?: () => Promise<void> | void;
+    };
+    const fsEl = el as FsElement;
+    const fsDoc = document as FsDocument;
+
+    const request =
+      fsEl.requestFullscreen?.bind(fsEl) ||
+      fsEl.webkitRequestFullscreen?.bind(fsEl) ||
+      fsEl.msRequestFullscreen?.bind(fsEl);
+    const exit =
+      fsDoc.exitFullscreen?.bind(fsDoc) ||
+      fsDoc.webkitExitFullscreen?.bind(fsDoc) ||
+      fsDoc.msExitFullscreen?.bind(fsDoc);
+
+    void Promise.resolve(request?.()).catch(() => {
+      // Some browsers require a user gesture; if it fails we stay in
+      // CSS-only fullscreen inside the tab.
+    });
+
+    const onFsChange = () => {
+      const active =
+        document.fullscreenElement ??
+        fsDoc.webkitFullscreenElement ??
+        fsDoc.msFullscreenElement ??
+        null;
+      if (!active) onClose();
+    };
     const onKey = (e: KeyboardEvent) => {
       if (e.key === "Escape") onClose();
     };
+
+    document.addEventListener("fullscreenchange", onFsChange);
+    document.addEventListener("webkitfullscreenchange", onFsChange);
     window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
+
+    return () => {
+      document.removeEventListener("fullscreenchange", onFsChange);
+      document.removeEventListener("webkitfullscreenchange", onFsChange);
+      window.removeEventListener("keydown", onKey);
+      const active =
+        document.fullscreenElement ??
+        fsDoc.webkitFullscreenElement ??
+        fsDoc.msFullscreenElement ??
+        null;
+      if (active) {
+        void Promise.resolve(exit?.()).catch(() => {});
+      }
+    };
   }, [onClose]);
 
   return (
     <motion.div
+      ref={rootRef}
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
