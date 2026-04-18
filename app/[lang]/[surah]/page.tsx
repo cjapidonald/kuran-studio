@@ -196,38 +196,40 @@ export default async function SurahPage({ params }: PageProps) {
         dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbJsonLd) }}
       />
 
-      <nav className="sticky top-0 z-50 bg-gray-950/80 backdrop-blur-md border-b border-white/5">
-        <div className="max-w-3xl mx-auto flex items-center justify-between gap-2 px-4 py-3">
-          <Link href={`/${lang}`} className="text-xs text-emerald-500 hover:text-emerald-400 font-mono tracking-widest transition-colors shrink-0">
-            &larr; {dict["reader.back"]}
+      <div className="fixed top-0 left-0 right-0 z-50 bg-gray-950/80 backdrop-blur-md border-b border-white/5">
+        <nav className="flex items-center justify-between px-6 py-4 max-w-6xl mx-auto">
+          <Link href={`/${lang}`} className="flex items-center gap-2">
+            <span className="w-8 h-8 bg-emerald-500 rounded-md flex items-center justify-center text-sm text-gray-950 font-black">Q</span>
+            <span className="font-bold text-white text-base">Kuran<span className="text-emerald-400">.</span></span>
           </Link>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-3">
+            <Link href={`/${lang}`} className="text-sm px-4 py-2 rounded-md text-gray-300 hover:text-white hover:bg-white/5 transition hidden sm:inline">{dict["nav.home"] || "Home"}</Link>
             <KhatmNavLink
               lang={lang}
               label={dict["nav.khatm"] || "Khatm"}
-              className="text-xs text-emerald-400 hover:text-emerald-300 font-mono tracking-widest transition-colors hidden sm:inline"
-            />
-            <AuthNavLink
-              href={`/${lang}/reflections`}
-              label={dict["nav.reflections"] || "Reflections"}
-              className="text-xs text-emerald-400 hover:text-emerald-300 font-mono tracking-widest transition-colors hidden sm:inline"
+              className="text-sm px-4 py-2 rounded-md text-emerald-400 hover:text-emerald-300 hover:bg-emerald-500/10 transition hidden sm:inline"
             />
             <AuthNavLink
               href={`/${lang}/devotion`}
               label={dict["nav.devotion"] || "Devotion"}
-              className="text-xs text-emerald-400 hover:text-emerald-300 font-mono tracking-widest transition-colors hidden sm:inline"
+              className="text-sm px-4 py-2 rounded-md text-gray-300 hover:text-white hover:bg-white/5 transition hidden sm:inline"
+            />
+            <AuthNavLink
+              href={`/${lang}/reflections`}
+              label={dict["nav.reflections"] || "Reflections"}
+              className="text-sm px-4 py-2 rounded-md text-gray-300 hover:text-white hover:bg-white/5 transition hidden sm:inline"
             />
             {hasRecitation ? (
               <ReciterPlayer />
-            ) : (
-              <span className="text-xs text-gray-500 font-mono hidden sm:inline">{meta.transliteration}</span>
-            )}
+            ) : null}
             <LanguageSelector currentLang={lang} />
           </div>
-        </div>
-      </nav>
+        </nav>
+      </div>
 
-      <div className="max-w-3xl mx-auto px-4 py-8">
+      <div className="h-16" />
+
+      <div className="px-6 py-8">
         <div className="text-center mb-8">
           <h1 className="text-3xl font-bold">{meta.transliteration}</h1>
           <p className="text-xl font-serif text-gray-400 mt-1" dir="rtl">{meta.name}</p>

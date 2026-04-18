@@ -104,7 +104,7 @@ export default async function LandingPage({ params }: PageProps) {
   };
 
   return (
-    <div className="min-h-screen bg-gray-950 text-white overflow-hidden">
+    <div className="min-h-screen bg-gray-950 text-white">
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(websiteJsonLd) }}
@@ -114,26 +114,32 @@ export default async function LandingPage({ params }: PageProps) {
         dangerouslySetInnerHTML={{ __html: JSON.stringify(organizationJsonLd) }}
       />
       {/* Nav */}
-      <nav className="relative z-50 flex items-center justify-between px-6 py-4 max-w-6xl mx-auto">
-        <Link href={`/${lang}`} className="flex items-center gap-2">
-          <span className="w-8 h-8 bg-emerald-500 rounded-md flex items-center justify-center text-sm text-gray-950 font-black">Q</span>
-          <span className="font-bold text-white text-base">Kuran<span className="text-emerald-400">.</span></span>
-        </Link>
-        <div className="flex items-center gap-3">
-          <Link href={`/${lang}`} className="text-sm px-4 py-2 rounded-md text-gray-300 hover:text-white hover:bg-white/5 transition hidden sm:inline">{dict["nav.home"] || "Home"}</Link>
-          <KhatmNavLink
-            lang={lang}
-            label={dict["nav.khatm"] || "Khatm"}
-            className="text-sm px-4 py-2 rounded-md text-emerald-400 hover:text-emerald-300 hover:bg-emerald-500/10 transition hidden sm:inline"
-          />
-          <a href={`/${lang}#features`} className="text-sm px-4 py-2 rounded-md text-gray-300 hover:text-white hover:bg-white/5 transition hidden sm:inline">{dict["nav.features"]}</a>
-          <Link href={`/${lang}/blog`} className="text-sm px-4 py-2 rounded-md text-gray-300 hover:text-white hover:bg-white/5 transition hidden sm:inline">{dict["nav.blog"]}</Link>
-          <LanguageSelector currentLang={lang} />
-          <Link href={`/${lang}/login`} className="text-sm px-5 py-2 rounded-md bg-emerald-500 hover:bg-emerald-400 text-black font-semibold transition shadow-md shadow-emerald-500/20">
-            {dict["nav.login"]}
+      {/* Nav */}
+      <div className="fixed top-0 left-0 right-0 z-50 bg-gray-950/80 backdrop-blur-md border-b border-white/5">
+        <nav className="flex items-center justify-between px-6 py-4 max-w-6xl mx-auto">
+          <Link href={`/${lang}`} className="flex items-center gap-2">
+            <span className="w-8 h-8 bg-emerald-500 rounded-md flex items-center justify-center text-sm text-gray-950 font-black">Q</span>
+            <span className="font-bold text-white text-base">Kuran<span className="text-emerald-400">.</span></span>
           </Link>
-        </div>
-      </nav>
+          <div className="flex items-center gap-3">
+            <Link href={`/${lang}`} className="text-sm px-4 py-2 rounded-md text-gray-300 hover:text-white hover:bg-white/5 transition hidden sm:inline">{dict["nav.home"] || "Home"}</Link>
+            <KhatmNavLink
+              lang={lang}
+              label={dict["nav.khatm"] || "Khatm"}
+              className="text-sm px-4 py-2 rounded-md text-emerald-400 hover:text-emerald-300 hover:bg-emerald-500/10 transition hidden sm:inline"
+            />
+            <a href={`/${lang}#features`} className="text-sm px-4 py-2 rounded-md text-gray-300 hover:text-white hover:bg-white/5 transition hidden sm:inline">{dict["nav.features"]}</a>
+            <Link href={`/${lang}/blog`} className="text-sm px-4 py-2 rounded-md text-gray-300 hover:text-white hover:bg-white/5 transition hidden sm:inline">{dict["nav.blog"]}</Link>
+            <LanguageSelector currentLang={lang} />
+            <Link href={`/${lang}/login`} className="text-sm px-5 py-2 rounded-md bg-emerald-500 hover:bg-emerald-400 text-black font-semibold transition shadow-md shadow-emerald-500/20">
+              {dict["nav.login"]}
+            </Link>
+          </div>
+        </nav>
+      </div>
+
+      {/* Spacer for fixed nav */}
+      <div className="h-16" />
 
       {/* Hero */}
       <section className="relative py-16 px-6">
@@ -142,9 +148,9 @@ export default async function LandingPage({ params }: PageProps) {
         </div>
         <div className="absolute top-20 left-1/2 -translate-x-1/2 w-[600px] h-[400px] bg-emerald-500/5 blur-[120px] rounded-full" />
 
-        <div className="relative max-w-6xl mx-auto grid md:grid-cols-2 gap-10 md:gap-14 items-center">
+        <div className="relative max-w-6xl mx-auto grid md:grid-cols-[55fr_45fr] gap-10 md:gap-14 items-center">
           {/* Left: text + CTAs */}
-          <div className="text-left">
+          <div className="text-left min-w-0">
             <div className="flex justify-center mb-6">
               <span className="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-gray-800 bg-gray-900/50 text-xs text-gray-400">
                 <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
@@ -171,7 +177,7 @@ export default async function LandingPage({ params }: PageProps) {
           </div>
 
           {/* Right: sample player */}
-          <div className="flex md:justify-end justify-center">
+          <div className="min-w-0 overflow-hidden">
             {hasPlayer && defaultReciter ? (
               <RecitationProvider
                 surah={1}
@@ -180,11 +186,11 @@ export default async function LandingPage({ params }: PageProps) {
                 initialRecitation={initialRecitation}
                 disableGlobalShortcuts
               >
-                <div className="w-full max-w-xl">
+                <div className="w-full">
                   <p className="text-[10px] text-emerald-500 font-mono tracking-widest mb-3 text-center md:text-right">
                     LISTEN &middot; {defaultReciter.display_name.split(" ").slice(-2).join(" ")}
                   </p>
-                  <div className="flex md:justify-end justify-center">
+                  <div>
                     <ReciterPlayer
                       defaultExpanded
                       showSurahControls

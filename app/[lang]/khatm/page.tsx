@@ -1,6 +1,8 @@
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { getDictionary } from "@/lib/i18n/get-dictionary";
+import { LanguageSelector } from "@/components/layout/language-selector";
+import { AuthNavLink } from "@/components/layout/auth-nav-link";
 import {
   displayGoal,
   progressPercent,
@@ -44,26 +46,39 @@ export default async function KhatmListPage({ params }: PageProps) {
 
   return (
     <div className="min-h-screen bg-gray-950 text-gray-200">
-      <nav className="border-b border-white/5 bg-gray-950/80 backdrop-blur-md">
-        <div className="max-w-5xl mx-auto flex items-center justify-between px-6 py-4">
+      <div className="fixed top-0 left-0 right-0 z-50 bg-gray-950/80 backdrop-blur-md border-b border-white/5">
+        <nav className="flex items-center justify-between px-6 py-4 max-w-6xl mx-auto">
           <Link href={`/${lang}`} className="flex items-center gap-2">
-            <span className="w-7 h-7 bg-emerald-500 rounded-md flex items-center justify-center text-xs text-gray-950 font-black">
-              Q
-            </span>
-            <span className="font-bold text-white">
-              Kuran<span className="text-emerald-400">.</span>
-            </span>
+            <span className="w-8 h-8 bg-emerald-500 rounded-md flex items-center justify-center text-sm text-gray-950 font-black">Q</span>
+            <span className="font-bold text-white text-base">Kuran<span className="text-emerald-400">.</span></span>
           </Link>
-          <Link
-            href={`/${lang}/khatm/new`}
-            className="text-sm px-4 py-2 rounded-md bg-emerald-500 hover:bg-emerald-400 text-black font-semibold transition"
-          >
-            + {dict["khatm.new"] || "New Khatm"}
-          </Link>
-        </div>
-      </nav>
+          <div className="flex items-center gap-3">
+            <Link href={`/${lang}`} className="text-sm px-4 py-2 rounded-md text-gray-300 hover:text-white hover:bg-white/5 transition hidden sm:inline">{dict["nav.home"] || "Home"}</Link>
+            <Link href={`/${lang}/khatm`} className="text-sm px-4 py-2 rounded-md text-white bg-white/10 transition hidden sm:inline">{dict["nav.khatm"] || "Khatm"}</Link>
+            <AuthNavLink
+              href={`/${lang}/devotion`}
+              label={dict["nav.devotion"] || "Devotion"}
+              className="text-sm px-4 py-2 rounded-md text-gray-300 hover:text-white hover:bg-white/5 transition hidden sm:inline"
+            />
+            <AuthNavLink
+              href={`/${lang}/reflections`}
+              label={dict["nav.reflections"] || "Reflections"}
+              className="text-sm px-4 py-2 rounded-md text-gray-300 hover:text-white hover:bg-white/5 transition hidden sm:inline"
+            />
+            <LanguageSelector currentLang={lang} />
+            <Link
+              href={`/${lang}/khatm/new`}
+              className="text-sm px-4 py-2 rounded-md bg-emerald-500 hover:bg-emerald-400 text-black font-semibold transition"
+            >
+              + {dict["khatm.new"] || "New Khatm"}
+            </Link>
+          </div>
+        </nav>
+      </div>
 
-      <div className="max-w-5xl mx-auto px-6 py-10">
+      <div className="h-16" />
+
+      <div className="px-6 py-10">
         <header className="mb-8">
           <p className="text-[10px] text-emerald-500 font-mono tracking-widest">
             {dict["khatm.label"] || "YOUR KHATMS"}

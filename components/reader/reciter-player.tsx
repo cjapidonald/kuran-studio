@@ -237,7 +237,7 @@ function ExpandedPanel({
       animate={{ opacity: 1, scale: 1 }}
       exit={{ opacity: 0, scale: 0.96 }}
       transition={{ type: "spring", stiffness: 240, damping: 28 }}
-      className={`${showSurahControls ? "w-[640px] max-w-[94vw]" : "w-[300px]"} p-4 rounded-2xl
+      className={`${showSurahControls ? "w-full max-w-[640px]" : "w-[300px]"} p-4 rounded-2xl
                  bg-white/5 backdrop-blur-xl backdrop-saturate-150
                  border border-white/10 text-white/90
                  bg-[radial-gradient(circle_at_30%_0%,rgba(16,185,129,0.2),transparent_60%)]
@@ -515,6 +515,12 @@ function FullscreenPanel({
   const isPlaying = state.status === "playing";
   const surahMeta = SURAHS.find((s) => s.number === state.surah);
   const rootRef = useRef<HTMLDivElement>(null);
+  const onCloseRef = useRef(onClose);
+  const didEnterFs = useRef(false);
+
+  useEffect(() => {
+    onCloseRef.current = onClose;
+  });
 
   // Surah-level timeline, same as ExpandedPanel.
   const cumDurations = (() => {
@@ -538,7 +544,9 @@ function FullscreenPanel({
   };
 
   // Request real device fullscreen when the panel mounts; close the panel
-  // if the user leaves fullscreen via ESC / F11 / OS gesture.
+  // only if the user *leaves* native fullscreen (ESC / F11 / OS gesture).
+  // If the browser refuses to enter fullscreen (no user gesture), we stay
+  // in CSS-only fullscreen and don't auto-close.
   useEffect(() => {
     const el = rootRef.current;
     if (!el) return;
@@ -565,21 +573,23 @@ function FullscreenPanel({
       fsDoc.webkitExitFullscreen?.bind(fsDoc) ||
       fsDoc.msExitFullscreen?.bind(fsDoc);
 
-    void Promise.resolve(request?.()).catch(() => {
-      // Some browsers require a user gesture; if it fails we stay in
-      // CSS-only fullscreen inside the tab.
-    });
+    void Promise.resolve(request?.())
+      .then(() => { didEnterFs.current = true; })
+      .catch(() => {
+        // Browser refused — stay in CSS-only fullscreen.
+      });
 
     const onFsChange = () => {
+      if (!didEnterFs.current) return; // never entered native fs, ignore
       const active =
         document.fullscreenElement ??
         fsDoc.webkitFullscreenElement ??
         fsDoc.msFullscreenElement ??
         null;
-      if (!active) onClose();
+      if (!active) onCloseRef.current();
     };
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape") onClose();
+      if (e.key === "Escape") onCloseRef.current();
     };
 
     document.addEventListener("fullscreenchange", onFsChange);
@@ -599,7 +609,7 @@ function FullscreenPanel({
         void Promise.resolve(exit?.()).catch(() => {});
       }
     };
-  }, [onClose]);
+  }, []);
 
   return (
     <motion.div
